@@ -8,11 +8,18 @@ const ADMIN_ID = "11111111-1111-4111-8111-111111111111";
 const CUSTOMER_ID = "22222222-2222-4222-8222-222222222222";
 const ORG_ID = "33333333-3333-4333-8333-333333333333";
 
-type FakeOptions = { existingEmails?: string[] };
+type FakeOptions = { existingEmails?: string[]; failProfileUpsert?: boolean };
 
-/** Minimal stand-in for the service-role Supabase client. */
-function fakeClient({ existingEmails = [] }: FakeOptions = {}) {
+/**
+ * Minimal stand-in for the service-role Supabase client.
+ *
+ * Like real Supabase Auth, createUser inserts the user BEFORE app_metadata is
+ * applied, so the database trigger creates a default profile
+ * (customer, no organization). The handler must correct it.
+ */
+function fakeClient({ existingEmails = [], failProfileUpsert = false }: FakeOptions = {}) {
   const created: Record<string, unknown>[] = [];
+  const deletedUserIds: string[] = [];
   const tokens: Record<string, string> = { "admin-token": ADMIN_ID, "customer-token": CUSTOMER_ID };
   const tables: Record<string, Record<string, unknown>[]> = {
     profiles: [
@@ -36,11 +43,25 @@ function fakeClient({ existingEmails = [] }: FakeOptions = {}) {
             return Promise.resolve({ data: { user: null }, error: { code: "email_exists", message: "exists" } });
           }
           created.push(attrs);
+          // What the on_auth_user_created trigger produces in real Supabase:
+          tables.profiles.push({ id: "new-user-id", role: "customer", organization_id: null });
           return Promise.resolve({ data: { user: { id: "new-user-id" } }, error: null });
+        },
+        deleteUser: (id: string) => {
+          deletedUserIds.push(id);
+          return Promise.resolve({ data: {}, error: null });
         },
       },
     },
     from: (table: string) => ({
+      upsert: (row: Record<string, unknown>) => {
+        if (failProfileUpsert) return Promise.resolve({ error: { message: "db down" } });
+        const rows = tables[table];
+        const index = rows.findIndex((r) => r.id === row.id);
+        if (index >= 0) rows[index] = { ...rows[index], ...row };
+        else rows.push(row);
+        return Promise.resolve({ error: null });
+      },
       select: () => ({
         eq: (column: string, value: string) => ({
           maybeSingle: () =>
@@ -53,7 +74,9 @@ function fakeClient({ existingEmails = [] }: FakeOptions = {}) {
     }),
   };
 
-  return { client: client as unknown as SupabaseClient, created };
+  const profileOf = (id: string) => tables.profiles.find((p) => p.id === id);
+
+  return { client: client as unknown as SupabaseClient, created, deletedUserIds, profileOf };
 }
 
 function request(body: unknown, token?: string, method = "POST") {
@@ -150,4 +173,30 @@ Deno.test("admin creates another admin without organization (201)", async () => 
   );
   assertEquals(res.status, 201);
   assertEquals((created[0].app_metadata as Record<string, unknown>).organization_id, null);
+});
+
+Deno.test("profile gets the chosen role and organization (not the trigger defaults)", async () => {
+  const { client, profileOf } = fakeClient();
+  const res = await createHandler(() => client)(request(validCustomer, "admin-token"));
+  assertEquals(res.status, 201);
+  const profile = profileOf("new-user-id")!;
+  assertEquals(profile.role, "customer");
+  assertEquals(profile.organization_id, ORG_ID);
+  assertEquals(profile.full_name, "Anna Andersson");
+  assertEquals(profile.email, "anna@acme.se");
+});
+
+Deno.test("new admin's profile is admin, not the default customer", async () => {
+  const { client, profileOf } = fakeClient();
+  await createHandler(() => client)(
+    request({ email: "boss@x.se", password: "secret-password", role: "admin" }, "admin-token"),
+  );
+  assertEquals(profileOf("new-user-id")!.role, "admin");
+});
+
+Deno.test("if saving the profile fails, the new login is deleted (500)", async () => {
+  const { client, deletedUserIds } = fakeClient({ failProfileUpsert: true });
+  const res = await createHandler(() => client)(request(validCustomer, "admin-token"));
+  assertEquals(res.status, 500);
+  assertEquals(deletedUserIds, ["new-user-id"]);
 });

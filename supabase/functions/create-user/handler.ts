@@ -6,8 +6,9 @@ import { corsHeaders, errorResponse, json } from "../_shared/http.ts";
 /**
  * POST /functions/v1/create-user
  *
- * Admin-only. Creates an auth user; the `on_auth_user_created` database trigger
- * then creates the profile from app_metadata (role, organization_id).
+ * Admin-only. Creates an auth user (role and organization in app_metadata, which
+ * users cannot change) and writes the same values to public.profiles, which is
+ * what Row Level Security reads.
  *
  * Body: { email, password, role: "admin" | "customer", organization_id?, full_name? }
  */
@@ -109,6 +110,25 @@ export function createHandler(getAdminClient: () => SupabaseClient) {
         return errorResponse(409, "A user with this email already exists");
       }
       return errorResponse(400, createError?.message ?? "Could not create user");
+    }
+
+    // 5. Write role and organization to the profile explicitly.
+    //    Supabase Auth inserts the user first and applies app_metadata in a
+    //    later UPDATE, so the on_auth_user_created trigger only sees the
+    //    defaults (customer, no organization). Upserting here makes the
+    //    profile correct regardless of that ordering.
+    const { error: profileUpsertError } = await admin.from("profiles").upsert({
+      id: created.user.id,
+      email,
+      role,
+      organization_id: organizationId,
+      full_name: full_name ?? null,
+    });
+
+    if (profileUpsertError) {
+      // Don't leave a login without a correct profile behind.
+      await admin.auth.admin.deleteUser(created.user.id);
+      return errorResponse(500, "Could not save the user's profile. Please try again.");
     }
 
     return json(
