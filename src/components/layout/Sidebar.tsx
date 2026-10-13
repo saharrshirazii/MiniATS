@@ -1,6 +1,7 @@
 import { Briefcase, Building2, KanbanSquare, Users, UserCog } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
 type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }> };
@@ -11,7 +12,6 @@ const mainNav: NavItem[] = [
   { to: "/candidates", label: "Candidates", icon: Users },
 ];
 
-// TODO(#8): only show for admins once auth context exists.
 const adminNav: NavItem[] = [
   { to: "/admin/organizations", label: "Organizations", icon: Building2 },
   { to: "/admin/users", label: "Users", icon: UserCog },
@@ -48,6 +48,8 @@ function NavSection({ title, items }: { title?: string; items: NavItem[] }) {
 }
 
 export function Sidebar() {
+  const { isAdmin } = useAuth();
+
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r bg-sidebar md:flex">
       <div className="flex h-14 items-center border-b px-5">
@@ -55,7 +57,7 @@ export function Sidebar() {
       </div>
       <nav className="flex flex-1 flex-col gap-6 p-3">
         <NavSection items={mainNav} />
-        <NavSection title="Admin" items={adminNav} />
+        {isAdmin && <NavSection title="Admin" items={adminNav} />}
       </nav>
     </aside>
   );
