@@ -40,7 +40,7 @@ Goal: something a first customer can use **as quickly as possible**.
 | Forms | react-hook-form + zod |
 | Drag and drop | @dnd-kit/core |
 | Backend | Supabase (Auth, Postgres, RLS, Storage, Edge Functions) |
-| Hosting | Vercel |
+| Hosting | Vercel — https://mini-ats-three.vercel.app (auto-deploys on push to `main`) |
 
 ## Architecture decisions (assumptions)
 
