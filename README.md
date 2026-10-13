@@ -114,6 +114,15 @@ npx supabase functions deploy assess-cv
 npx supabase secrets set LLM_API_KEY=<your-key>
 ```
 
+| Function | Purpose |
+|---|---|
+| `create-user` | Admin-only. Verifies the caller is an admin, then creates the account with role and organization in `app_metadata` (users can't change it). |
+
+Tests (requires [Deno](https://deno.com)):
+```bash
+deno test supabase/functions/
+```
+
 ### 5. Run locally
 ```bash
 npm run dev
