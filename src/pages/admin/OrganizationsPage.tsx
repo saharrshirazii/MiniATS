@@ -1,6 +1,7 @@
 import { Building2 } from "lucide-react";
 
 import { CreateOrganizationDialog } from "@/components/admin/CreateOrganizationDialog";
+import { EditOrganizationDialog } from "@/components/admin/EditOrganizationDialog";
 import { EmptyState, ErrorMessage, LoadingRows } from "@/components/common/StatusMessages";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
@@ -44,7 +45,10 @@ export function OrganizationsPage() {
                 <TableHead className="pl-4">Name</TableHead>
                 <TableHead className="text-right">Users</TableHead>
                 <TableHead className="text-right">Jobs</TableHead>
-                <TableHead className="pr-4">Created</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="pr-4 text-right">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -53,8 +57,11 @@ export function OrganizationsPage() {
                   <TableCell className="pl-4 font-medium">{org.name}</TableCell>
                   <TableCell className="text-right tabular-nums">{org.userCount}</TableCell>
                   <TableCell className="text-right tabular-nums">{org.jobCount}</TableCell>
-                  <TableCell className="pr-4 text-muted-foreground">
+                  <TableCell className="text-muted-foreground">
                     {formatDate(org.created_at)}
+                  </TableCell>
+                  <TableCell className="pr-4 text-right">
+                    <EditOrganizationDialog organization={org} />
                   </TableCell>
                 </TableRow>
               ))}

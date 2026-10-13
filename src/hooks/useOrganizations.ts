@@ -56,3 +56,25 @@ export function useCreateOrganization() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: organizationKeys.all }),
   });
 }
+
+export function useUpdateOrganization() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { data, error } = await supabase
+        .from("organizations")
+        .update({ name: name.trim() })
+        .eq("id", id)
+        .select("id, name")
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: organizationKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["users"] }); // users list shows org names
+    },
+  });
+}
