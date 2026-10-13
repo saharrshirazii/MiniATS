@@ -80,7 +80,7 @@ Pipeline stages: `applied → screening → interview → offer → hired / reje
 ### Prerequisites
 - Node.js 20+
 - A [Supabase](https://supabase.com) project
-- [Supabase CLI](https://supabase.com/docs/guides/cli)
+- The Supabase CLI is installed as a dev dependency, so run it with `npx supabase …`
 
 ### 1. Clone and install
 ```bash
@@ -101,15 +101,17 @@ cp .env.example .env
 
 ### 3. Database
 ```bash
-supabase link --project-ref <your-project-ref>
-supabase db push
+npx supabase login
+npx supabase link --project-ref <your-project-ref>
+npm run db:push      # apply migrations in supabase/migrations
+npm run db:types     # regenerate src/types/database.types.ts
 ```
 
 ### 4. Edge Functions
 ```bash
-supabase functions deploy create-user
-supabase functions deploy assess-cv
-supabase secrets set LLM_API_KEY=<your-key>
+npx supabase functions deploy create-user
+npx supabase functions deploy assess-cv
+npx supabase secrets set LLM_API_KEY=<your-key>
 ```
 
 ### 5. Run locally
@@ -118,7 +120,20 @@ npm run dev
 ```
 
 ### 6. Create the first admin
-_Instructions coming soon._
+1. Supabase → **Authentication → Users → Add user**, tick **Auto Confirm User**.
+2. Supabase → **SQL Editor**:
+   ```sql
+   update public.profiles set role = 'admin' where email = 'you@example.com';
+   ```
+
+### Useful scripts
+| Script | What it does |
+|---|---|
+| `npm run dev` | Start the dev server |
+| `npm run build` | Type-check and build for production |
+| `npm run lint` | Run ESLint |
+| `npm run db:push` | Apply database migrations |
+| `npm run db:types` | Regenerate TypeScript types from the database |
 
 ---
 

@@ -106,7 +106,11 @@ applications  (id, job_id, candidate_id, stage, position, ai_score, ai_summary, 
 ## Conventions
 
 - TypeScript strict mode; no `any`.
-- Use generated Supabase types (`supabase gen types typescript --linked > src/types/database.types.ts`).
+- Use generated Supabase types: run `npm run db:types` after every migration (writes `src/types/database.types.ts`). Use the `Tables<"jobs">` / `TablesInsert<"jobs">` / `Enums<"application_stage">` helpers.
+- Import with the `@/` alias (`@/lib/supabase`, `@/components/ui/button`).
+- UI components come from shadcn/ui: add new ones with `npx shadcn@latest add <name>` (e.g. `dialog`, `select`, `sheet`, `badge`, `sonner`). Don't hand-roll components shadcn already provides.
+- Run the Supabase CLI via `npx supabase …` (installed as a dev dependency).
+- Before committing: `npm run build` and `npm run lint` must pass.
 - Data access goes through react-query hooks in `src/hooks/`, not directly in components.
 - Database changes are **always** new migration files in `supabase/migrations/`; never edit an applied migration.
 - Small, focused commits using Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`.
