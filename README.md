@@ -130,10 +130,11 @@ npm run dev
 
 ### 6. Create the first admin
 1. Supabase → **Authentication → Users → Add user**, tick **Auto Confirm User**.
-2. Supabase → **SQL Editor**:
+2. Supabase → **SQL Editor** → run [`supabase/scripts/promote-admin.sql`](supabase/scripts/promote-admin.sql) with your email:
    ```sql
-   update public.profiles set role = 'admin' where email = 'you@example.com';
+   update public.profiles set role = 'admin', organization_id = null where email = 'you@example.com';
    ```
+3. Sign in to the app. From now on, create all other accounts under **Admin → Users**.
 
 ### Useful scripts
 | Script | What it does |
