@@ -37,32 +37,34 @@ export function UsersPage() {
 
       {users && users.length > 0 && (
         <div className="rounded-lg border">
-          <Table>
+          <Table className="min-w-[760px] table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="pl-4">Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Organization</TableHead>
-                <TableHead className="pr-4">Created</TableHead>
+                <TableHead className="w-[22%] pl-4">Name</TableHead>
+                <TableHead className="w-[28%]">Email</TableHead>
+                <TableHead className="w-[14%]">Role</TableHead>
+                <TableHead className="w-[20%]">Organization</TableHead>
+                <TableHead className="w-[16%] pr-4">Created</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell className="pl-4 font-medium">
+                  <TableCell className="truncate pl-4 font-medium">
                     {user.full_name || <span className="text-muted-foreground">—</span>}
                     {user.id === currentUser?.id && (
                       <span className="ml-2 text-xs text-muted-foreground">(you)</span>
                     )}
                   </TableCell>
-                  <TableCell>{user.email}</TableCell>
+                  <TableCell className="truncate" title={user.email ?? undefined}>
+                    {user.email}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={user.role === "admin" ? "default" : "secondary"}>
                       {user.role === "admin" ? "Admin" : "Customer"}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="truncate">
                     {user.organization?.name ?? <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="pr-4 text-muted-foreground">

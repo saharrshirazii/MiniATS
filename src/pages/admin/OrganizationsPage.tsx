@@ -39,14 +39,14 @@ export function OrganizationsPage() {
 
       {organizations && organizations.length > 0 && (
         <div className="rounded-lg border">
-          <Table>
+          <Table className="min-w-[640px] table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="pl-4">Name</TableHead>
-                <TableHead className="text-right">Users</TableHead>
-                <TableHead className="text-right">Jobs</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="pr-4 text-right">
+                <TableHead className="w-[36%] pl-4">Name</TableHead>
+                <TableHead className="w-[14%]">Users</TableHead>
+                <TableHead className="w-[14%]">Jobs</TableHead>
+                <TableHead className="w-[20%]">Created</TableHead>
+                <TableHead className="w-[16%] pr-4 text-right">
                   <span className="sr-only">Actions</span>
                 </TableHead>
               </TableRow>
@@ -54,9 +54,11 @@ export function OrganizationsPage() {
             <TableBody>
               {organizations.map((org) => (
                 <TableRow key={org.id}>
-                  <TableCell className="pl-4 font-medium">{org.name}</TableCell>
-                  <TableCell className="text-right tabular-nums">{org.userCount}</TableCell>
-                  <TableCell className="text-right tabular-nums">{org.jobCount}</TableCell>
+                  <TableCell className="truncate pl-4 font-medium" title={org.name}>
+                    {org.name}
+                  </TableCell>
+                  <TableCell className="tabular-nums">{org.userCount}</TableCell>
+                  <TableCell className="tabular-nums">{org.jobCount}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDate(org.created_at)}
                   </TableCell>
