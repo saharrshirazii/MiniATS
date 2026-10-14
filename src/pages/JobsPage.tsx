@@ -186,17 +186,18 @@ export function JobsPage() {
           ) : (
             <>
               <div className="rounded-lg border">
-                <Table className={cn("table-fixed", isAll ? "min-w-[900px]" : "min-w-[760px]")}>
+                <Table className={cn("table-fixed", isAll ? "min-w-[1040px]" : "min-w-[880px]")}>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className={cn("pl-4", isAll ? "w-[28%]" : "w-[36%]")}>
+                      <TableHead className={cn("pl-4", isAll ? "w-[23%]" : "w-[29%]")}>
                         Title
                       </TableHead>
-                      {isAll && <TableHead className="w-[16%]">Organization</TableHead>}
-                      <TableHead className="w-[10%]">Status</TableHead>
-                      <TableHead className="w-[11%]">Candidates</TableHead>
-                      <TableHead className="w-[12%]">Created</TableHead>
-                      <TableHead className={cn("pr-4 text-right", isAll ? "w-[23%]" : "w-[31%]")}>
+                      {isAll && <TableHead className="w-[13%]">Organization</TableHead>}
+                      <TableHead className="w-[9%]">Status</TableHead>
+                      <TableHead className="w-[10%]">Candidates</TableHead>
+                      <TableHead className="w-[14%]">Created by</TableHead>
+                      <TableHead className="w-[11%]">Created</TableHead>
+                      <TableHead className={cn("pr-4 text-right", isAll ? "w-[20%]" : "w-[27%]")}>
                         <span className="sr-only">Actions</span>
                       </TableHead>
                     </TableRow>
@@ -228,6 +229,9 @@ export function JobsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="tabular-nums">{job.candidateCount}</TableCell>
+                        <TableCell className="truncate" title={job.created_by_name ?? undefined}>
+                          {job.created_by_name ?? <span className="text-muted-foreground">—</span>}
+                        </TableCell>
                         <TableCell className="text-muted-foreground">
                           {formatDate(job.created_at)}
                         </TableCell>

@@ -17,6 +17,7 @@ export type JobWithCounts = Pick<
   | "description"
   | "status"
   | "created_at"
+  | "created_by_name"
 > & { candidateCount: number; organizationName: string | null };
 
 export const jobKeys = {
@@ -29,7 +30,7 @@ async function fetchJobs(orgId: string | null): Promise<JobWithCounts[]> {
   let query = supabase
     .from("jobs")
     .select(
-      "id, organization_id, title, location, workplace_type, description, status, created_at, applications(count), organization:organizations(name)",
+      "id, organization_id, title, location, workplace_type, description, status, created_at, created_by_name, applications(count), organization:organizations(name)",
     )
     .order("created_at", { ascending: false });
 
