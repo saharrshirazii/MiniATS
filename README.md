@@ -110,13 +110,15 @@ npm run db:types     # regenerate src/types/database.types.ts
 ### 4. Edge Functions
 ```bash
 npx supabase functions deploy create-user
+npx supabase functions deploy delete-user
 npx supabase functions deploy assess-cv
 npx supabase secrets set LLM_API_KEY=<your-key>
 ```
 
 | Function | Purpose |
 |---|---|
-| `create-user` | Admin-only. Verifies the caller is an admin, then creates the account with role and organization in `app_metadata` (users can't change it). |
+| `create-user` | Admin-only. Verifies the caller is an admin, then creates the account and its profile (role, organization). |
+| `delete-user` | Admin-only. Deletes an account (not your own). The database keeps at least one admin. |
 
 Tests (requires [Deno](https://deno.com)):
 ```bash

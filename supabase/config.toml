@@ -418,3 +418,6 @@ enabled = true
 # valid user token before our code runs; the function then checks the admin role.
 [functions.create-user]
 verify_jwt = true
+
+[functions.delete-user]
+verify_jwt = true

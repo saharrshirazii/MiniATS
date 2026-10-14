@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
+import { requireAdmin } from "../_shared/auth.ts";
 import { corsHeaders, errorResponse, json } from "../_shared/http.ts";
 
 /**
@@ -40,32 +41,10 @@ export function createHandler(getAdminClient: () => SupabaseClient) {
       return errorResponse(405, "Method not allowed");
     }
 
-    // 1. Who is calling? The service-role client verifies the caller's JWT.
-    const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
-    if (!token) {
-      return errorResponse(401, "Missing authorization token");
-    }
-
+    // 1–2. Signed in, and an admin? (role read from the database)
     const admin = getAdminClient();
-
-    const { data: userData, error: userError } = await admin.auth.getUser(token);
-    if (userError || !userData.user) {
-      return errorResponse(401, "Invalid or expired session");
-    }
-
-    // 2. Is the caller an admin? Read the role from the database, never from the request.
-    const { data: callerProfile, error: profileError } = await admin
-      .from("profiles")
-      .select("role")
-      .eq("id", userData.user.id)
-      .maybeSingle();
-
-    if (profileError) {
-      return errorResponse(500, "Could not verify permissions");
-    }
-    if (callerProfile?.role !== "admin") {
-      return errorResponse(403, "Only admins can create accounts");
-    }
+    const check = await requireAdmin(req, admin, "Only admins can create accounts");
+    if (!check.ok) return check.response;
 
     // 3. Validate the input.
     let body: unknown;
