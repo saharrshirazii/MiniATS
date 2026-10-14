@@ -15,12 +15,8 @@ type PaginationProps = {
 function pageNumbers(current: number, total: number): (number | "gap")[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   const pages = new Set([1, total, current - 1, current, current + 1]);
-  const sorted = [...pages]
-    .filter((p) => p >= 1 && p <= total)
-    .sort((a, b) => a - b);
-  return sorted.flatMap((p, i) =>
-    i > 0 && p - sorted[i - 1] > 1 ? ["gap" as const, p] : [p],
-  );
+  const sorted = [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
+  return sorted.flatMap((p, i) => (i > 0 && p - sorted[i - 1] > 1 ? ["gap" as const, p] : [p]));
 }
 
 export function Pagination({

@@ -36,9 +36,7 @@ function writeStored(userId: string | undefined, orgId: string) {
 export function ActiveOrgProvider({ children }: { children: React.ReactNode }) {
   const { user, profile, isAdmin } = useAuth();
   const { data: organizations = [], isPending } = useOrganizations();
-  const [selectedId, setSelectedId] = useState<string | null>(() =>
-    readStored(user?.id),
-  );
+  const [selectedId, setSelectedId] = useState<string | null>(() => readStored(user?.id));
 
   const setActiveOrgId = useCallback(
     (id: string) => {
@@ -64,25 +62,13 @@ export function ActiveOrgProvider({ children }: { children: React.ReactNode }) {
 
     return {
       activeOrgId,
-      activeOrgName:
-        organizations.find((o) => o.id === activeOrgId)?.name ?? null,
+      activeOrgName: organizations.find((o) => o.id === activeOrgId)?.name ?? null,
       isAll,
       canSwitch: isAdmin,
       setActiveOrgId,
       loading: isPending,
     };
-  }, [
-    isAdmin,
-    organizations,
-    selectedId,
-    profile?.organization_id,
-    setActiveOrgId,
-    isPending,
-  ]);
+  }, [isAdmin, organizations, selectedId, profile?.organization_id, setActiveOrgId, isPending]);
 
-  return (
-    <ActiveOrgContext.Provider value={value}>
-      {children}
-    </ActiveOrgContext.Provider>
-  );
+  return <ActiveOrgContext.Provider value={value}>{children}</ActiveOrgContext.Provider>;
 }

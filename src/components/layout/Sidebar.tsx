@@ -1,21 +1,10 @@
-import {
-  Briefcase,
-  Building2,
-  History,
-  KanbanSquare,
-  Users,
-  UserCog,
-} from "lucide-react";
+import { Briefcase, Building2, History, KanbanSquare, Users, UserCog } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
-type NavItem = {
-  to: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-};
+type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }> };
 
 const mainNav: NavItem[] = [
   { to: "/", label: "Pipeline", icon: KanbanSquare },

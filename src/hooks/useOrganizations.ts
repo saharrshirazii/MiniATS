@@ -18,9 +18,7 @@ export type OrganizationWithCounts = {
 async function fetchOrganizations(): Promise<OrganizationWithCounts[]> {
   const { data, error } = await supabase
     .from("organizations")
-    .select(
-      "id, name, created_at, profiles(count), jobs(count), candidates(count)",
-    )
+    .select("id, name, created_at, profiles(count), jobs(count), candidates(count)")
     .order("name");
 
   if (error) throw error;
@@ -57,8 +55,7 @@ export function useCreateOrganization() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: organizationKeys.all }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: organizationKeys.all }),
   });
 }
 
@@ -105,12 +102,9 @@ export function useDeleteOrganization() {
       }
       // RLS hides rows the caller may not delete, which returns 0 rows instead of an error.
       if (data.length === 0) {
-        throw new Error(
-          "Organization not found, or you are not allowed to delete it.",
-        );
+        throw new Error("Organization not found, or you are not allowed to delete it.");
       }
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: organizationKeys.all }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: organizationKeys.all }),
   });
 }

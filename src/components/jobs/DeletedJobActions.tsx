@@ -13,11 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  usePurgeJob,
-  useRestoreJob,
-  type JobWithCounts,
-} from "@/hooks/useJobs";
+import { usePurgeJob, useRestoreJob, type JobWithCounts } from "@/hooks/useJobs";
 
 /** Admins: restore a soft-deleted job, with confirmation and a success toast. */
 export function RestoreJobDialog({ job }: { job: JobWithCounts }) {
@@ -54,9 +50,8 @@ export function RestoreJobDialog({ job }: { job: JobWithCounts }) {
         <DialogHeader>
           <DialogTitle>Restore job?</DialogTitle>
           <DialogDescription>
-            Restore <strong className="text-foreground">{job.title}</strong>? It
-            comes back with its status and candidates, and the customer can see
-            it again.
+            Restore <strong className="text-foreground">{job.title}</strong>? It comes back with its
+            status and candidates, and the customer can see it again.
           </DialogDescription>
         </DialogHeader>
         {restore.error && <ErrorMessage message={restore.error.message} />}
@@ -119,8 +114,7 @@ export function PurgeJobDialog({ job }: { job: JobWithCounts }) {
         <DialogHeader>
           <DialogTitle>Delete permanently?</DialogTitle>
           <DialogDescription>
-            Permanently delete{" "}
-            <strong className="text-foreground">{job.title}</strong> and its
+            Permanently delete <strong className="text-foreground">{job.title}</strong> and its
             pipeline? This cannot be undone. The candidates themselves are kept.
           </DialogDescription>
         </DialogHeader>
@@ -134,12 +128,7 @@ export function PurgeJobDialog({ job }: { job: JobWithCounts }) {
           >
             Cancel
           </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={confirm}
-            disabled={purge.isPending}
-          >
+          <Button type="button" variant="destructive" onClick={confirm} disabled={purge.isPending}>
             {purge.isPending && <Loader2 className="animate-spin" />}
             Yes, delete permanently
           </Button>

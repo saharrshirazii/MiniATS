@@ -21,11 +21,7 @@ import { Input } from "@/components/ui/input";
 import { useCreateOrganization } from "@/hooks/useOrganizations";
 
 const schema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "Name is required")
-    .max(200, "Name is too long"),
+  name: z.string().trim().min(1, "Name is required").max(200, "Name is too long"),
 });
 
 type Values = z.infer<typeof schema>;
@@ -34,10 +30,7 @@ export function CreateOrganizationDialog() {
   const [open, setOpen] = useState(false);
   const createOrganization = useCreateOrganization();
 
-  const form = useForm<Values>({
-    resolver: zodResolver(schema),
-    defaultValues: { name: "" },
-  });
+  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { name: "" } });
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
@@ -68,25 +61,13 @@ export function CreateOrganizationDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>New organization</DialogTitle>
-          <DialogDescription>
-            A customer company. You can add users to it afterwards.
-          </DialogDescription>
+          <DialogDescription>A customer company. You can add users to it afterwards.</DialogDescription>
         </DialogHeader>
 
-        <form
-          className="space-y-4"
-          onSubmit={form.handleSubmit(onSubmit)}
-          noValidate
-        >
-          {createOrganization.error && (
-            <ErrorMessage message={createOrganization.error.message} />
-          )}
+        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+          {createOrganization.error && <ErrorMessage message={createOrganization.error.message} />}
 
-          <FormField
-            id="org-name"
-            label="Name"
-            error={form.formState.errors.name?.message}
-          >
+          <FormField id="org-name" label="Name" error={form.formState.errors.name?.message}>
             <Input
               id="org-name"
               placeholder="Acme AB"
@@ -97,17 +78,11 @@ export function CreateOrganizationDialog() {
           </FormField>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting && (
-                <Loader2 className="animate-spin" />
-              )}
+              {form.formState.isSubmitting && <Loader2 className="animate-spin" />}
               Create
             </Button>
           </DialogFooter>

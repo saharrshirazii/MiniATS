@@ -72,10 +72,7 @@ export function useCreateJob() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      orgId,
-      ...job
-    }: JobInput & { orgId: string; status: JobStatus }) => {
+    mutationFn: async ({ orgId, ...job }: JobInput & { orgId: string; status: JobStatus }) => {
       const { data, error } = await supabase
         .from("jobs")
         .insert({ ...job, organization_id: orgId })
@@ -101,15 +98,10 @@ export function useUpdateJob() {
       id,
       ...changes
     }: Partial<JobInput> & { id: string; status?: JobStatus }) => {
-      const { data, error } = await supabase
-        .from("jobs")
-        .update(changes)
-        .eq("id", id)
-        .select("id");
+      const { data, error } = await supabase.from("jobs").update(changes).eq("id", id).select("id");
 
       if (error) throw new Error(`Could not update job: ${error.message}`);
-      if (data.length === 0)
-        throw new Error("Job not found, or you are not allowed to edit it.");
+      if (data.length === 0) throw new Error("Job not found, or you are not allowed to edit it.");
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: jobKeys.all }),
   });
@@ -127,21 +119,13 @@ export function useDeleteJob() {
   return useMutation({
     mutationFn: async (job: { id: string; status: JobStatus }) => {
       if (job.status === "draft") {
-        const { data, error } = await supabase
-          .from("jobs")
-          .delete()
-          .eq("id", job.id)
-          .select("id");
+        const { data, error } = await supabase.from("jobs").delete().eq("id", job.id).select("id");
         if (error) throw new Error(`Could not delete job: ${error.message}`);
         if (data.length === 0)
-          throw new Error(
-            "Job not found, or you are not allowed to delete it.",
-          );
+          throw new Error("Job not found, or you are not allowed to delete it.");
         return;
       }
-      const { error } = await supabase.rpc("soft_delete_job", {
-        p_job_id: job.id,
-      });
+      const { error } = await supabase.rpc("soft_delete_job", { p_job_id: job.id });
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
@@ -173,14 +157,9 @@ export function usePurgeJob() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data, error } = await supabase
-        .from("jobs")
-        .delete()
-        .eq("id", id)
-        .select("id");
+      const { data, error } = await supabase.from("jobs").delete().eq("id", id).select("id");
       if (error) throw new Error(`Could not delete job: ${error.message}`);
-      if (data.length === 0)
-        throw new Error("Job not found, or you are not allowed to delete it.");
+      if (data.length === 0) throw new Error("Job not found, or you are not allowed to delete it.");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: jobKeys.all });

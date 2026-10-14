@@ -3,11 +3,7 @@ import { UserCog } from "lucide-react";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
 import { EditUserDialog } from "@/components/admin/EditUserDialog";
-import {
-  EmptyState,
-  ErrorMessage,
-  LoadingRows,
-} from "@/components/common/StatusMessages";
+import { EmptyState, ErrorMessage, LoadingRows } from "@/components/common/StatusMessages";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -35,16 +31,10 @@ export function UsersPage() {
       />
 
       {isPending && <LoadingRows />}
-      {error && (
-        <ErrorMessage message={`Could not load users: ${error.message}`} />
-      )}
+      {error && <ErrorMessage message={`Could not load users: ${error.message}`} />}
 
       {users?.length === 0 && (
-        <EmptyState
-          icon={UserCog}
-          title="No users yet"
-          description="Create the first account."
-        />
+        <EmptyState icon={UserCog} title="No users yet" description="Create the first account." />
       )}
 
       {users && users.length > 0 && (
@@ -66,46 +56,29 @@ export function UsersPage() {
               {users.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="truncate pl-4 font-medium">
-                    {user.full_name || (
-                      <span className="text-muted-foreground">—</span>
-                    )}
+                    {user.full_name || <span className="text-muted-foreground">—</span>}
                     {user.id === currentUser?.id && (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        (you)
-                      </span>
+                      <span className="ml-2 text-xs text-muted-foreground">(you)</span>
                     )}
                   </TableCell>
-                  <TableCell
-                    className="truncate"
-                    title={user.email ?? undefined}
-                  >
+                  <TableCell className="truncate" title={user.email ?? undefined}>
                     {user.email}
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={user.role === "admin" ? "default" : "secondary"}
-                    >
+                    <Badge variant={user.role === "admin" ? "default" : "secondary"}>
                       {user.role === "admin" ? "Admin" : "Customer"}
                     </Badge>
                   </TableCell>
                   <TableCell className="truncate">
-                    {user.organization?.name ?? (
-                      <span className="text-muted-foreground">—</span>
-                    )}
+                    {user.organization?.name ?? <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDate(user.created_at)}
                   </TableCell>
                   <TableCell className="pr-4 text-right">
                     <div className="flex justify-end gap-1">
-                      <EditUserDialog
-                        user={user}
-                        isSelf={user.id === currentUser?.id}
-                      />
-                      <DeleteUserDialog
-                        user={user}
-                        isSelf={user.id === currentUser?.id}
-                      />
+                      <EditUserDialog user={user} isSelf={user.id === currentUser?.id} />
+                      <DeleteUserDialog user={user} isSelf={user.id === currentUser?.id} />
                     </div>
                   </TableCell>
                 </TableRow>

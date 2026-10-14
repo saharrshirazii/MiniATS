@@ -13,10 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  useDeleteOrganization,
-  type OrganizationWithCounts,
-} from "@/hooks/useOrganizations";
+import { useDeleteOrganization, type OrganizationWithCounts } from "@/hooks/useOrganizations";
 
 type Props = {
   organization: OrganizationWithCounts;
@@ -81,15 +78,12 @@ export function DeleteOrganizationDialog({ organization }: Props) {
             <DialogHeader>
               <DialogTitle>Delete organization?</DialogTitle>
               <DialogDescription>
-                Delete{" "}
-                <strong className="text-foreground">{organization.name}</strong>
-                ? This cannot be undone.
+                Delete <strong className="text-foreground">{organization.name}</strong>? This cannot
+                be undone.
               </DialogDescription>
             </DialogHeader>
 
-            {deleteOrganization.error && (
-              <ErrorMessage message={deleteOrganization.error.message} />
-            )}
+            {deleteOrganization.error && <ErrorMessage message={deleteOrganization.error.message} />}
 
             <DialogFooter>
               <Button
@@ -106,9 +100,7 @@ export function DeleteOrganizationDialog({ organization }: Props) {
                 onClick={confirmDelete}
                 disabled={deleteOrganization.isPending}
               >
-                {deleteOrganization.isPending && (
-                  <Loader2 className="animate-spin" />
-                )}
+                {deleteOrganization.isPending && <Loader2 className="animate-spin" />}
                 Yes, delete
               </Button>
             </DialogFooter>
@@ -121,9 +113,8 @@ export function DeleteOrganizationDialog({ organization }: Props) {
                 Can't delete this organization
               </DialogTitle>
               <DialogDescription>
-                <strong className="text-foreground">{organization.name}</strong>{" "}
-                still has {blockers.join(", ")}. Remove or move them first, then
-                try again.
+                <strong className="text-foreground">{organization.name}</strong> still has{" "}
+                {blockers.join(", ")}. Remove or move them first, then try again.
               </DialogDescription>
             </DialogHeader>
 

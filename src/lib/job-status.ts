@@ -3,8 +3,7 @@ import type { Enums } from "@/types/database.types";
 type JobStatus = Enums<"job_status">;
 
 /** Status changes a user can make from the jobs list. */
-export type JobStatusActionKey =
-  "publish" | "hold" | "reopen" | "close" | "archive";
+export type JobStatusActionKey = "publish" | "hold" | "reopen" | "close" | "archive";
 
 /**
  * Lifecycle: draft → open ⇄ on hold, open → closed → archived.

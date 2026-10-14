@@ -2,11 +2,7 @@ import { Building2, History, Search, X } from "lucide-react";
 import { useState } from "react";
 
 import { Pagination } from "@/components/common/Pagination";
-import {
-  EmptyState,
-  ErrorMessage,
-  LoadingRows,
-} from "@/components/common/StatusMessages";
+import { EmptyState, ErrorMessage, LoadingRows } from "@/components/common/StatusMessages";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,8 +77,7 @@ function Actor({ entry }: { entry: ActivityLogEntry }) {
 
 /** Activity log of the active organization (customers: always their own), or of all (admin "All"). */
 export function ActivityLogPage() {
-  const { activeOrgId, activeOrgName, isAll, canSwitch, loading } =
-    useActiveOrg();
+  const { activeOrgId, activeOrgName, isAll, canSwitch, loading } = useActiveOrg();
 
   const header = (
     <PageHeader
@@ -118,11 +113,7 @@ export function ActivityLogPage() {
     <>
       {header}
       {/* Remount on organization switch so filters (e.g. the selected user) start fresh. */}
-      <ActivityLogView
-        key={activeOrgId ?? "all"}
-        orgId={activeOrgId}
-        showOrganization={isAll}
-      />
+      <ActivityLogView key={activeOrgId ?? "all"} orgId={activeOrgId} showOrganization={isAll} />
     </>
   );
 }
@@ -147,15 +138,11 @@ function ActivityLogView({
   });
   const { data: actors } = useActivityActors(orgId);
 
-  const setFilter = <K extends keyof FilterState>(
-    key: K,
-    value: FilterState[K],
-  ) => {
+  const setFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setFilters((f) => ({ ...f, [key]: value }));
     setPage(1);
   };
-  const hasFilters =
-    search !== "" || Object.values(filters).some((v) => v !== "");
+  const hasFilters = search !== "" || Object.values(filters).some((v) => v !== "");
   const clearFilters = () => {
     setSearch("");
     setFilters(NO_FILTERS);
@@ -191,9 +178,7 @@ function ActivityLogView({
           <NativeSelect
             id="log-action"
             value={filters.action}
-            onChange={(e) =>
-              setFilter("action", e.target.value as LogAction | "")
-            }
+            onChange={(e) => setFilter("action", e.target.value as LogAction | "")}
           >
             <option value="">All actions</option>
             {LOG_ACTIONS.map((a) => (
@@ -211,9 +196,7 @@ function ActivityLogView({
           <NativeSelect
             id="log-entity"
             value={filters.entityType}
-            onChange={(e) =>
-              setFilter("entityType", e.target.value as LogEntityType | "")
-            }
+            onChange={(e) => setFilter("entityType", e.target.value as LogEntityType | "")}
           >
             <option value="">All items</option>
             {LOG_ENTITY_TYPES.map((t) => (
@@ -269,12 +252,7 @@ function ActivityLogView({
         </div>
 
         {hasFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mb-0.5"
-            onClick={clearFilters}
-          >
+          <Button variant="ghost" size="sm" className="mb-0.5" onClick={clearFilters}>
             <X />
             Clear filters
           </Button>
@@ -282,11 +260,7 @@ function ActivityLogView({
       </div>
 
       {isPending && <LoadingRows />}
-      {error && (
-        <ErrorMessage
-          message={`Could not load the activity log: ${error.message}`}
-        />
-      )}
+      {error && <ErrorMessage message={`Could not load the activity log: ${error.message}`} />}
 
       {data && data.total === 0 && !hasFilters && (
         <EmptyState
@@ -305,41 +279,20 @@ function ActivityLogView({
       {data && data.total > 0 && (
         <>
           <div
-            className={cn(
-              "rounded-lg border transition-opacity",
-              isFetching && "opacity-60",
-            )}
+            className={cn("rounded-lg border transition-opacity", isFetching && "opacity-60")}
             aria-busy={isFetching}
           >
             <Table
-              className={cn(
-                "table-fixed",
-                showOrganization ? "min-w-[1060px]" : "min-w-[920px]",
-              )}
+              className={cn("table-fixed", showOrganization ? "min-w-[1060px]" : "min-w-[920px]")}
             >
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[15%] pl-4">When</TableHead>
-                  {showOrganization && (
-                    <TableHead className="w-[12%]">Organization</TableHead>
-                  )}
-                  <TableHead
-                    className={showOrganization ? "w-[20%]" : "w-[23%]"}
-                  >
-                    User
-                  </TableHead>
+                  {showOrganization && <TableHead className="w-[12%]">Organization</TableHead>}
+                  <TableHead className={showOrganization ? "w-[20%]" : "w-[23%]"}>User</TableHead>
                   <TableHead className="w-[14%]">Action</TableHead>
-                  <TableHead
-                    className={showOrganization ? "w-[17%]" : "w-[20%]"}
-                  >
-                    Item
-                  </TableHead>
-                  <TableHead
-                    className={cn(
-                      "pr-4",
-                      showOrganization ? "w-[22%]" : "w-[28%]",
-                    )}
-                  >
+                  <TableHead className={showOrganization ? "w-[17%]" : "w-[20%]"}>Item</TableHead>
+                  <TableHead className={cn("pr-4", showOrganization ? "w-[22%]" : "w-[28%]")}>
                     Details
                   </TableHead>
                 </TableRow>
@@ -353,14 +306,9 @@ function ActivityLogView({
                         {formatDateTime(entry.created_at)}
                       </TableCell>
                       {showOrganization && (
-                        <TableCell
-                          className="truncate"
-                          title={entry.organizationName ?? undefined}
-                        >
+                        <TableCell className="truncate" title={entry.organizationName ?? undefined}>
                           {entry.organizationName ?? (
-                            <span className="text-muted-foreground">
-                              Deleted
-                            </span>
+                            <span className="text-muted-foreground">Deleted</span>
                           )}
                         </TableCell>
                       )}
@@ -368,18 +316,12 @@ function ActivityLogView({
                         <Actor entry={entry} />
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={ACTION_BADGE[entry.action]}
-                        >
+                        <Badge variant="outline" className={ACTION_BADGE[entry.action]}>
                           {logActionLabel(entry.action)}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <p
-                          className="truncate font-medium"
-                          title={entry.entity_label}
-                        >
+                        <p className="truncate font-medium" title={entry.entity_label}>
                           {entry.entity_label}
                         </p>
                         <p className="text-xs text-muted-foreground">

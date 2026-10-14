@@ -1,12 +1,4 @@
-import {
-  AlertTriangle,
-  Archive,
-  CircleSlash,
-  Loader2,
-  Pause,
-  Play,
-  Send,
-} from "lucide-react";
+import { AlertTriangle, Archive, CircleSlash, Loader2, Pause, Play, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -21,11 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  useUpdateJob,
-  type JobStatus,
-  type JobWithCounts,
-} from "@/hooks/useJobs";
+import { useUpdateJob, type JobStatus, type JobWithCounts } from "@/hooks/useJobs";
 import type { JobStatusActionKey } from "@/lib/job-status";
 
 type ActionConfig = {
@@ -60,8 +48,8 @@ const ACTIONS: Record<JobStatusActionKey, ActionConfig> = {
     toastDescription: "is on hold. Reopen it to continue recruiting.",
     description: (t) => (
       <>
-        Put {t} on hold? Recruiting is paused; its candidates stay in the
-        pipeline. You can reopen it at any time.
+        Put {t} on hold? Recruiting is paused; its candidates stay in the pipeline. You can reopen
+        it at any time.
       </>
     ),
   },
@@ -85,8 +73,8 @@ const ACTIONS: Record<JobStatusActionKey, ActionConfig> = {
     toastDescription: "is now closed.",
     description: (t) => (
       <>
-        Close {t}? Recruiting stops for good: a closed job can't be edited or
-        reopened, only archived. Its candidates stay in the pipeline.
+        Close {t}? Recruiting stops for good: a closed job can't be edited or reopened, only
+        archived. Its candidates stay in the pipeline.
       </>
     ),
   },
@@ -99,10 +87,7 @@ const ACTIONS: Record<JobStatusActionKey, ActionConfig> = {
     toastTitle: "Job archived",
     toastDescription: "was moved to Archived.",
     description: (t) => (
-      <>
-        Archive {t}? It moves to the Archived tab and is kept as read-only
-        history.
-      </>
+      <>Archive {t}? It moves to the Archived tab and is kept as read-only history.</>
     ),
   },
 };
@@ -141,11 +126,7 @@ export function JobStatusDialog({ job, action: actionKey }: Props) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label={`${action.label} ${job.title}`}
-        >
+        <Button variant="ghost" size="sm" aria-label={`${action.label} ${job.title}`}>
           <Icon />
           {action.label}
         </Button>
@@ -160,8 +141,7 @@ export function JobStatusDialog({ job, action: actionKey }: Props) {
                 Complete the job first
               </DialogTitle>
               <DialogDescription>
-                {title} has no work place type yet. Use Edit to add it, then
-                publish.
+                {title} has no work place type yet. Use Edit to add it, then publish.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -177,9 +157,7 @@ export function JobStatusDialog({ job, action: actionKey }: Props) {
               <DialogDescription>{action.description(title)}</DialogDescription>
             </DialogHeader>
 
-            {updateJob.error && (
-              <ErrorMessage message={updateJob.error.message} />
-            )}
+            {updateJob.error && <ErrorMessage message={updateJob.error.message} />}
 
             <DialogFooter>
               <Button
@@ -190,11 +168,7 @@ export function JobStatusDialog({ job, action: actionKey }: Props) {
               >
                 Cancel
               </Button>
-              <Button
-                type="button"
-                onClick={confirm}
-                disabled={updateJob.isPending}
-              >
+              <Button type="button" onClick={confirm} disabled={updateJob.isPending}>
                 {updateJob.isPending && <Loader2 className="animate-spin" />}
                 {action.confirmLabel}
               </Button>

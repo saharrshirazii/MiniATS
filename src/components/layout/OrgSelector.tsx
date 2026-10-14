@@ -10,8 +10,7 @@ import { useOrganizations } from "@/hooks/useOrganizations";
  * Customers: their organization's name (read-only).
  */
 export function OrgSelector() {
-  const { activeOrgId, activeOrgName, isAll, canSwitch, setActiveOrgId } =
-    useActiveOrg();
+  const { activeOrgId, activeOrgName, isAll, canSwitch, setActiveOrgId } = useActiveOrg();
   const { data: organizations = [] } = useOrganizations();
 
   if (!canSwitch) {
@@ -24,9 +23,7 @@ export function OrgSelector() {
   }
 
   if (organizations.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">No organizations yet</p>
-    );
+    return <p className="text-sm text-muted-foreground">No organizations yet</p>;
   }
 
   return (

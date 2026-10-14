@@ -22,6 +22,4 @@ export type ActiveOrgContextValue = {
   loading: boolean;
 };
 
-export const ActiveOrgContext = createContext<ActiveOrgContextValue | null>(
-  null,
-);
+export const ActiveOrgContext = createContext<ActiveOrgContextValue | null>(null);

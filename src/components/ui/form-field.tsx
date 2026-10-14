@@ -9,13 +9,7 @@ type FormFieldProps = {
 };
 
 /** Label + control + validation message, consistently spaced. */
-export function FormField({
-  id,
-  label,
-  error,
-  hint,
-  children,
-}: FormFieldProps) {
+export function FormField({ id, label, error, hint, children }: FormFieldProps) {
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>

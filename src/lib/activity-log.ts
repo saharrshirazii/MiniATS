@@ -18,8 +18,7 @@ export const LOG_ENTITY_TYPES: { value: LogEntityType; label: string }[] = [
   { value: "job", label: "Job" },
 ];
 
-export const logActionLabel = (a: LogAction) =>
-  LOG_ACTIONS.find((x) => x.value === a)?.label ?? a;
+export const logActionLabel = (a: LogAction) => LOG_ACTIONS.find((x) => x.value === a)?.label ?? a;
 export const logEntityLabel = (t: LogEntityType) =>
   LOG_ENTITY_TYPES.find((x) => x.value === t)?.label ?? t;
 
@@ -34,20 +33,14 @@ const FIELD_LABELS: Record<string, string> = {
 
 type Change = { from?: Json; to?: Json; changed?: boolean };
 
-function isRecord(
-  value: Json | undefined,
-): value is { [key: string]: Json | undefined } {
+function isRecord(value: Json | undefined): value is { [key: string]: Json | undefined } {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** A stored value in readable form: status and work place type get their labels; empty → "—". */
 function formatValue(field: string, value: Json | undefined): string {
   if (value === null || value === undefined || value === "") return "—";
-  if (
-    field === "status" &&
-    typeof value === "string" &&
-    value in JOB_STATUS_LABELS
-  ) {
+  if (field === "status" && typeof value === "string" && value in JOB_STATUS_LABELS) {
     return JOB_STATUS_LABELS[value as keyof typeof JOB_STATUS_LABELS];
   }
   if (field === "workplace_type" && typeof value === "string") {
@@ -70,13 +63,11 @@ export function describeDetails(details: Json): string[] {
     return Object.entries(changes).map(([field, raw]) => {
       const change = (isRecord(raw) ? raw : {}) as Change;
       const label = FIELD_LABELS[field] ?? field;
-      if (change.changed || field === "organization_id")
-        return `${label} changed`;
+      if (change.changed || field === "organization_id") return `${label} changed`;
       return `${label}: ${formatValue(field, change.from)} → ${formatValue(field, change.to)}`;
     });
   }
 
-  if ("status" in details)
-    return [`Status: ${formatValue("status", details.status)}`];
+  if ("status" in details) return [`Status: ${formatValue("status", details.status)}`];
   return [];
 }

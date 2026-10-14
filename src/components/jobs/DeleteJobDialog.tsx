@@ -69,9 +69,8 @@ export function DeleteJobDialog({ job }: { job: JobWithCounts }) {
               <>Delete the draft {title}? It is deleted permanently.</>
             ) : (
               <>
-                Delete {title}? It is removed from all lists and the pipeline.
-                An admin can restore it within {DELETED_RETENTION_DAYS} days;
-                after that it is deleted permanently.
+                Delete {title}? It is removed from all lists and the pipeline. An admin can restore
+                it within {DELETED_RETENTION_DAYS} days; after that it is deleted permanently.
               </>
             )}
           </DialogDescription>
@@ -84,9 +83,8 @@ export function DeleteJobDialog({ job }: { job: JobWithCounts }) {
           >
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <p>
-              {affected} {affected === 1 ? "candidate is" : "candidates are"} in
-              this job's pipeline and will be hidden with it. The candidates
-              themselves are kept.
+              {affected} {affected === 1 ? "candidate is" : "candidates are"} in this job's pipeline
+              and will be hidden with it. The candidates themselves are kept.
             </p>
           </div>
         )}

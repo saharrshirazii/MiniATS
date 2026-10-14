@@ -26,8 +26,7 @@ export type ActivityLogFilters = {
 export const activityKeys = {
   all: ["activity"] as const,
   list: (filters: ActivityLogFilters) => ["activity", "list", filters] as const,
-  actors: (orgId: string | null) =>
-    ["activity", "actors", orgId ?? "all"] as const,
+  actors: (orgId: string | null) => ["activity", "actors", orgId ?? "all"] as const,
 };
 
 /** Start of a local day as an ISO timestamp; `addDays` moves forward (for an exclusive end). */
@@ -63,10 +62,7 @@ async function fetchActivity(f: ActivityLogFilters) {
   if (f.to) query = query.lt("created_at", startOfLocalDay(f.to, 1));
 
   const term = f.search.replace(unsafeSearchChars, " ").trim();
-  if (term)
-    query = query.or(
-      `entity_label.ilike.*${term}*,actor_email.ilike.*${term}*`,
-    );
+  if (term) query = query.or(`entity_label.ilike.*${term}*,actor_email.ilike.*${term}*`);
 
   const { data, error, count } = await query;
   if (error) throw error;
