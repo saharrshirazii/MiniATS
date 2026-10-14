@@ -112,6 +112,8 @@ applications  (id, job_id, candidate_id, stage, position, ai_score, ai_summary, 
 - Run the Supabase CLI via `npx supabase …` (installed as a dev dependency).
 - Before committing: `npm run build` and `npm run lint` must pass.
 - Data access goes through react-query hooks in `src/hooks/`, not directly in components.
+- Customer-data pages (jobs, candidates, kanban) are scoped with `useActiveOrg()`: query by `activeOrgId` and insert with `organization_id: activeOrgId`. Admins pick it in the "Acting as" selector; customers are fixed to their own organization.
+- UI pattern for changes: edits and destructive actions use a confirmation step and a success toast (`toast.success` from sonner); errors are shown inside the dialog.
 - Database changes are **always** new migration files in `supabase/migrations/`; never edit an applied migration.
 - Small, focused commits using Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`.
 - Reference GitHub issues in commits: `feat: kanban filters (closes #20)`.
