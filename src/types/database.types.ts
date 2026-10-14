@@ -148,6 +148,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           created_by_email: string | null
+          deleted_at: string | null
+          deleted_by_email: string | null
           description: string | null
           id: string
           location: string | null
@@ -161,6 +163,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           created_by_email?: string | null
+          deleted_at?: string | null
+          deleted_by_email?: string | null
           description?: string | null
           id?: string
           location?: string | null
@@ -174,6 +178,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           created_by_email?: string | null
+          deleted_at?: string | null
+          deleted_by_email?: string | null
           description?: string | null
           id?: string
           location?: string | null
@@ -259,6 +265,8 @@ export type Database = {
     Functions: {
       is_admin: { Args: never; Returns: boolean }
       my_org: { Args: never; Returns: string }
+      restore_job: { Args: { p_job_id: string }; Returns: undefined }
+      soft_delete_job: { Args: { p_job_id: string }; Returns: undefined }
     }
     Enums: {
       application_stage:
