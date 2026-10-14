@@ -29,7 +29,7 @@ function writeStored(userId: string | undefined, orgId: string) {
 
 /**
  * Decides which organization the app works on.
- * Admins act on behalf of a selected organization (remembered per browser);
+ * Admins pick one organization or "All" (remembered per browser, default All);
  * customers are fixed to their own. RLS still enforces access in the database —
  * this only scopes what the UI shows and where new rows go.
  */
@@ -40,6 +40,7 @@ export function ActiveOrgProvider({ children }: { children: React.ReactNode }) {
 
   const setActiveOrgId = useCallback(
     (id: string) => {
+      // ALL_ORGS ("all") is stored as-is; it never matches an organization id.
       setSelectedId(id);
       writeStored(user?.id, id);
     },
@@ -47,12 +48,14 @@ export function ActiveOrgProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo<ActiveOrgContextValue>(() => {
-    let activeOrgId: string | null;
+    let activeOrgId: string | null = null;
+    let isAll = false;
     if (isAdmin) {
-      // Fall back to the first organization if nothing is selected yet,
-      // or the remembered one was deleted.
+      // "All" unless a still-existing organization was chosen
+      // (falls back to All if the remembered one was deleted).
       const stillExists = organizations.some((o) => o.id === selectedId);
-      activeOrgId = stillExists ? selectedId : (organizations[0]?.id ?? null);
+      if (stillExists) activeOrgId = selectedId;
+      else isAll = organizations.length > 0;
     } else {
       activeOrgId = profile?.organization_id ?? null;
     }
@@ -60,6 +63,7 @@ export function ActiveOrgProvider({ children }: { children: React.ReactNode }) {
     return {
       activeOrgId,
       activeOrgName: organizations.find((o) => o.id === activeOrgId)?.name ?? null,
+      isAll,
       canSwitch: isAdmin,
       setActiveOrgId,
       loading: isPending,
