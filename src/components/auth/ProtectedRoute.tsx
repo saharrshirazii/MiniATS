@@ -7,14 +7,17 @@ import { FullPageSpinner } from "./FullPageSpinner";
 
 /** Only renders child routes for signed-in users; everyone else goes to /login. */
 export function ProtectedRoute() {
-  const { session, profile, isAdmin, loading, signOut } = useAuth();
+  const { session, profile, isAdmin, loading, signedOutByUser, signOut } = useAuth();
   const location = useLocation();
 
   if (loading) return <FullPageSpinner />;
 
   if (!session) {
-    // Remember where the user wanted to go, so login can send them back.
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    // Remember where the user wanted to go, so login can send them back —
+    // unless they signed out on purpose; then the next login starts fresh.
+    return (
+      <Navigate to="/login" replace state={signedOutByUser ? undefined : { from: location }} />
+    );
   }
 
   // A customer must belong to an organization to see any data.

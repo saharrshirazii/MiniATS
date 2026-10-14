@@ -13,6 +13,11 @@ export type AuthContextValue = {
   isAdmin: boolean;
   /** True until the initial session and profile have been resolved. */
   loading: boolean;
+  /**
+   * True after the user clicked "Sign out" (until the next sign-in). The login
+   * page then starts fresh instead of returning to the page they left.
+   */
+  signedOutByUser: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };

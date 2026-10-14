@@ -21,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [session, setSession] = useState<Session | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
+  const [signedOutByUser, setSignedOutByUser] = useState(false);
 
   useEffect(() => {
     // Restore the session saved in localStorage (keeps the user signed in on refresh).
@@ -50,9 +51,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    setSignedOutByUser(false);
   }, []);
 
   const signOut = useCallback(async () => {
+    setSignedOutByUser(true);
     await supabase.auth.signOut();
     // Drop all cached data so the next user never sees the previous user's data.
     queryClient.clear();
@@ -66,10 +69,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profile,
       isAdmin: profile?.role === "admin",
       loading: sessionLoading || (!!userId && profileQuery.isPending),
+      signedOutByUser,
       signIn,
       signOut,
     };
-  }, [session, sessionLoading, userId, profileQuery.data, profileQuery.isPending, signIn, signOut]);
+  }, [
+    session,
+    sessionLoading,
+    userId,
+    profileQuery.data,
+    profileQuery.isPending,
+    signedOutByUser,
+    signIn,
+    signOut,
+  ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
