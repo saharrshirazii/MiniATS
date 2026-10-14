@@ -125,6 +125,7 @@ export type Database = {
           status: Database["public"]["Enums"]["job_status"];
           title: string;
           updated_at: string;
+          workplace_type: Database["public"]["Enums"]["workplace_type"] | null;
         };
         Insert: {
           created_at?: string;
@@ -136,6 +137,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["job_status"];
           title: string;
           updated_at?: string;
+          workplace_type?: Database["public"]["Enums"]["workplace_type"] | null;
         };
         Update: {
           created_at?: string;
@@ -147,6 +149,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["job_status"];
           title?: string;
           updated_at?: string;
+          workplace_type?: Database["public"]["Enums"]["workplace_type"] | null;
         };
         Relationships: [
           {
@@ -229,6 +232,7 @@ export type Database = {
       application_stage: "applied" | "screening" | "interview" | "offer" | "hired" | "rejected";
       job_status: "open" | "closed";
       user_role: "admin" | "customer";
+      workplace_type: "on_site" | "hybrid" | "remote";
     };
     CompositeTypes: {
       [_ in never]: never;

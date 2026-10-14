@@ -18,24 +18,33 @@ import {
 } from "@/components/ui/dialog";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateJob, useUpdateJob, type JobWithCounts } from "@/hooks/useJobs";
+import { WORKPLACE_TYPES, workplaceLabel } from "@/lib/constants";
 
 const schema = z.object({
-  title: z.string().trim().min(1, "Title is required").max(200, "Title is too long"),
-  location: z.string().trim().max(200, "Location is too long"),
-  description: z.string().trim().max(10_000, "Description is too long"),
+  title: z.string().trim().min(1, "Job title is required").max(200, "Job title is too long"),
+  location: z.string().trim().max(200, "Job location is too long"),
+  // "" = nothing chosen yet (the select's placeholder); required on submit.
+  workplace_type: z
+    .union([z.enum(["on_site", "hybrid", "remote"]), z.literal("")])
+    .refine((v) => v !== "", "Choose a work place type"),
+  description: z.string().trim().max(10_000, "Job description is too long"),
 });
 
-type Values = z.infer<typeof schema>;
+// What the form holds (may still be "" for work place type) vs. what validation returns.
+type FormState = z.input<typeof schema>;
+type ValidJob = z.output<typeof schema>;
 
 type Props =
   | { mode: "create"; orgId: string | null; orgName: string | null }
   | { mode: "edit"; job: JobWithCounts };
 
-const toInput = (v: Values) => ({
+const toInput = (v: FormState) => ({
   title: v.title.trim(),
   location: v.location.trim() || null,
+  workplace_type: v.workplace_type || null,
   description: v.description.trim() || null,
 });
 
@@ -51,23 +60,32 @@ export function JobFormDialog(props: Props) {
   const updateJob = useUpdateJob();
   const mutation = isEdit ? updateJob : createJob;
 
-  const initial: Values = isEdit
+  const initial: FormState = isEdit
     ? {
         title: props.job.title,
         location: props.job.location ?? "",
+        workplace_type: props.job.workplace_type ?? "",
         description: props.job.description ?? "",
       }
-    : { title: "", location: "", description: "" };
+    : { title: "", location: "", workplace_type: "", description: "" };
 
-  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: initial });
+  const form = useForm<FormState, unknown, ValidJob>({
+    resolver: zodResolver(schema),
+    defaultValues: initial,
+  });
   const { errors } = form.formState;
   const values = form.watch();
 
   const changes = isEdit
     ? ([
-        values.title.trim() !== initial.title && `Title: "${initial.title}" → "${values.title.trim()}"`,
+        values.title.trim() !== initial.title &&
+          `Title: "${initial.title}" → "${values.title.trim()}"`,
         values.location.trim() !== initial.location.trim() &&
           `Location: "${initial.location || "—"}" → "${values.location.trim() || "—"}"`,
+        values.workplace_type !== initial.workplace_type &&
+          `Work place type: ${workplaceLabel(initial.workplace_type || null) ?? "—"} → ${
+            workplaceLabel(values.workplace_type || null) ?? "—"
+          }`,
         values.description.trim() !== initial.description.trim() && "Description updated",
       ].filter(Boolean) as string[])
     : [];
@@ -82,7 +100,7 @@ export function JobFormDialog(props: Props) {
     }
   };
 
-  const save = async (v: Values) => {
+  const save = async (v: FormState) => {
     try {
       if (isEdit) {
         await updateJob.mutateAsync({ id: props.job.id, ...toInput(v) });
@@ -99,7 +117,7 @@ export function JobFormDialog(props: Props) {
     }
   };
 
-  const onSubmit = (v: Values) => (isEdit ? setStep("confirm") : save(v));
+  const onSubmit = (v: ValidJob) => (isEdit ? setStep("confirm") : save(v));
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -132,7 +150,7 @@ export function JobFormDialog(props: Props) {
             <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)} noValidate>
               {mutation.error && <ErrorMessage message={mutation.error.message} />}
 
-              <FormField id="job-title" label="Title" error={errors.title?.message}>
+              <FormField id="job-title" label="Job title" error={errors.title?.message}>
                 <Input
                   id="job-title"
                   placeholder="Frontend Developer"
@@ -142,17 +160,38 @@ export function JobFormDialog(props: Props) {
                 />
               </FormField>
 
-              <FormField id="job-location" label="Location" error={errors.location?.message}>
-                <Input
-                  id="job-location"
-                  placeholder="Gothenburg · Hybrid"
-                  {...form.register("location")}
-                />
-              </FormField>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField id="job-location" label="Job location" error={errors.location?.message}>
+                  <Input
+                    id="job-location"
+                    placeholder="Gothenburg"
+                    {...form.register("location")}
+                  />
+                </FormField>
+
+                <FormField
+                  id="job-workplace"
+                  label="Work place type"
+                  error={errors.workplace_type?.message}
+                >
+                  <NativeSelect
+                    id="job-workplace"
+                    aria-invalid={!!errors.workplace_type}
+                    {...form.register("workplace_type")}
+                  >
+                    <option value="">Select…</option>
+                    {WORKPLACE_TYPES.map((w) => (
+                      <option key={w.value} value={w.value}>
+                        {w.label}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </FormField>
+              </div>
 
               <FormField
                 id="job-description"
-                label="Description"
+                label="Job description"
                 error={errors.description?.message}
                 hint="Responsibilities and requirements. Also used later for the AI CV assessment."
               >

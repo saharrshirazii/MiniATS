@@ -11,3 +11,15 @@ export const STAGES: { value: ApplicationStage; label: string }[] = [
   { value: "hired", label: "Hired" },
   { value: "rejected", label: "Rejected" },
 ];
+
+export type WorkplaceType = Enums<"workplace_type">;
+
+export const WORKPLACE_TYPES: { value: WorkplaceType; label: string }[] = [
+  { value: "on_site", label: "On-site" },
+  { value: "hybrid", label: "Hybrid" },
+  { value: "remote", label: "Remote" },
+];
+
+export function workplaceLabel(value: WorkplaceType | null): string | null {
+  return WORKPLACE_TYPES.find((w) => w.value === value)?.label ?? null;
+}

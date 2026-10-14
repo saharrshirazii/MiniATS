@@ -9,7 +9,7 @@ export type JobStatus = Enums<"job_status">;
 
 export type JobWithCounts = Pick<
   Tables<"jobs">,
-  "id" | "organization_id" | "title" | "location" | "description" | "status" | "created_at"
+  "id" | "organization_id" | "title" | "location" | "workplace_type" | "description" | "status" | "created_at"
 > & { candidateCount: number };
 
 export const jobKeys = {
@@ -20,7 +20,9 @@ export const jobKeys = {
 async function fetchJobs(orgId: string): Promise<JobWithCounts[]> {
   const { data, error } = await supabase
     .from("jobs")
-    .select("id, organization_id, title, location, description, status, created_at, applications(count)")
+    .select(
+      "id, organization_id, title, location, workplace_type, description, status, created_at, applications(count)",
+    )
     .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
 
@@ -44,6 +46,7 @@ export function useJobs(orgId: string | null) {
 export type JobInput = {
   title: string;
   location: string | null;
+  workplace_type: Enums<"workplace_type"> | null;
   description: string | null;
 };
 
