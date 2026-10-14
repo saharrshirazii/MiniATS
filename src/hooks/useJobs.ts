@@ -17,7 +17,7 @@ export type JobWithCounts = Pick<
   | "description"
   | "status"
   | "created_at"
-  | "created_by_name"
+  | "created_by_email"
 > & { candidateCount: number; organizationName: string | null };
 
 export const jobKeys = {
@@ -30,7 +30,7 @@ async function fetchJobs(orgId: string | null): Promise<JobWithCounts[]> {
   let query = supabase
     .from("jobs")
     .select(
-      "id, organization_id, title, location, workplace_type, description, status, created_at, created_by_name, applications(count), organization:organizations(name)",
+      "id, organization_id, title, location, workplace_type, description, status, created_at, created_by_email, applications(count), organization:organizations(name)",
     )
     .order("created_at", { ascending: false });
 
@@ -102,5 +102,26 @@ export function useUpdateJob() {
       if (data.length === 0) throw new Error("Job not found, or you are not allowed to edit it.");
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: jobKeys.all }),
+  });
+}
+
+/**
+ * Delete a job. Its pipeline entries (applications) are removed with it;
+ * the candidates themselves stay in the organization.
+ */
+export function useDeleteJob() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.from("jobs").delete().eq("id", id).select("id");
+
+      if (error) throw new Error(`Could not delete job: ${error.message}`);
+      if (data.length === 0) throw new Error("Job not found, or you are not allowed to delete it.");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: jobKeys.all });
+      queryClient.invalidateQueries({ queryKey: organizationKeys.all }); // job counts
+    },
   });
 }

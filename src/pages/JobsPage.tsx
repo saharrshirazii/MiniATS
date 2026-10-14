@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { Pagination } from "@/components/common/Pagination";
 import { EmptyState, ErrorMessage, LoadingRows } from "@/components/common/StatusMessages";
 import { JobFormDialog } from "@/components/jobs/JobFormDialog";
+import { DeleteJobDialog } from "@/components/jobs/DeleteJobDialog";
 import { JobStatusDialog } from "@/components/jobs/JobStatusDialog";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ import {
 import { useActiveOrg } from "@/hooks/useActiveOrg";
 import { useJobs, type JobStatus } from "@/hooks/useJobs";
 import { workplaceLabel } from "@/lib/constants";
+import { DELETABLE_STATUSES, EDITABLE_STATUSES, STATUS_ACTIONS } from "@/lib/job-status";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -30,17 +32,29 @@ const PAGE_SIZE = 10;
 
 const STATUS_BADGE: Record<
   JobStatus,
-  { label: string; variant: "default" | "secondary" | "outline" }
+  { label: string; variant: "default" | "secondary" | "outline"; className?: string }
 > = {
   open: { label: "Open", variant: "default" },
+  on_hold: {
+    label: "On hold",
+    variant: "outline",
+    className: "border-amber-200 bg-amber-50 text-amber-800",
+  },
   closed: { label: "Closed", variant: "secondary" },
   draft: { label: "Draft", variant: "outline" },
+  archived: {
+    label: "Archived",
+    variant: "outline",
+    className: "border-dashed text-muted-foreground",
+  },
 };
 
 const FILTERS: { value: Filter; label: string }[] = [
   { value: "open", label: "Open" },
+  { value: "on_hold", label: "On hold" },
   { value: "closed", label: "Closed" },
   { value: "draft", label: "Draft" },
+  { value: "archived", label: "Archived" },
   { value: "all", label: "All" },
 ];
 
@@ -63,13 +77,19 @@ export function JobsPage() {
         (isAll && (j.organizationName ?? "").toLowerCase().includes(term)),
     ) ?? [];
 
-  const counts = {
-    all: matching.length,
-    open: matching.filter((j) => j.status === "open").length,
-    closed: matching.filter((j) => j.status === "closed").length,
-    draft: matching.filter((j) => j.status === "draft").length,
+  const countOf = (status: JobStatus) => matching.filter((j) => j.status === status).length;
+  const counts: Record<Filter, number> = {
+    // "All" leaves out archived jobs; they have their own tab.
+    all: matching.length - countOf("archived"),
+    open: countOf("open"),
+    on_hold: countOf("on_hold"),
+    closed: countOf("closed"),
+    draft: countOf("draft"),
+    archived: countOf("archived"),
   };
-  const filtered = matching.filter((j) => filter === "all" || j.status === filter);
+  const filtered = matching.filter((j) =>
+    filter === "all" ? j.status !== "archived" : j.status === filter,
+  );
 
   // Clamp in case the list shrank (search, filter, organization switch, close).
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -186,18 +206,17 @@ export function JobsPage() {
           ) : (
             <>
               <div className="rounded-lg border">
-                <Table className={cn("table-fixed", isAll ? "min-w-[1040px]" : "min-w-[880px]")}>
+                <Table className={cn("table-fixed", isAll ? "min-w-[1060px]" : "min-w-[940px]")}>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className={cn("pl-4", isAll ? "w-[23%]" : "w-[29%]")}>
+                      <TableHead className={cn("pl-4", isAll ? "w-[19%]" : "w-[25%]")}>
                         Title
                       </TableHead>
-                      {isAll && <TableHead className="w-[13%]">Organization</TableHead>}
-                      <TableHead className="w-[9%]">Status</TableHead>
-                      <TableHead className="w-[10%]">Candidates</TableHead>
-                      <TableHead className="w-[14%]">Created by</TableHead>
-                      <TableHead className="w-[11%]">Created</TableHead>
-                      <TableHead className={cn("pr-4 text-right", isAll ? "w-[20%]" : "w-[27%]")}>
+                      {isAll && <TableHead className="w-[11%]">Organization</TableHead>}
+                      <TableHead className="w-[8%]">Status</TableHead>
+                      <TableHead className={isAll ? "w-[8%]" : "w-[9%]"}>Candidates</TableHead>
+                      <TableHead className={isAll ? "w-[17%]" : "w-[20%]"}>Created by</TableHead>
+                      <TableHead className={cn("pr-4 text-right", isAll ? "w-[37%]" : "w-[38%]")}>
                         <span className="sr-only">Actions</span>
                       </TableHead>
                     </TableRow>
@@ -224,21 +243,35 @@ export function JobsPage() {
                           </TableCell>
                         )}
                         <TableCell>
-                          <Badge variant={STATUS_BADGE[job.status].variant}>
+                          <Badge
+                            variant={STATUS_BADGE[job.status].variant}
+                            className={STATUS_BADGE[job.status].className}
+                          >
                             {STATUS_BADGE[job.status].label}
                           </Badge>
                         </TableCell>
                         <TableCell className="tabular-nums">{job.candidateCount}</TableCell>
-                        <TableCell className="truncate" title={job.created_by_name ?? undefined}>
-                          {job.created_by_name ?? <span className="text-muted-foreground">—</span>}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDate(job.created_at)}
+                        <TableCell>
+                          <p className="truncate" title={job.created_by_email ?? undefined}>
+                            {job.created_by_email ?? (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {formatDate(job.created_at)}
+                          </p>
                         </TableCell>
                         <TableCell className="pr-4 text-right">
                           <div className="flex justify-end gap-1">
-                            <JobFormDialog mode="edit" job={job} />
-                            <JobStatusDialog job={job} />
+                            {EDITABLE_STATUSES.includes(job.status) && (
+                              <JobFormDialog mode="edit" job={job} />
+                            )}
+                            {STATUS_ACTIONS[job.status].map((action) => (
+                              <JobStatusDialog key={action} job={job} action={action} />
+                            ))}
+                            {DELETABLE_STATUSES.includes(job.status) && (
+                              <DeleteJobDialog job={job} />
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>

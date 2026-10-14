@@ -113,7 +113,8 @@ applications  (id, job_id, candidate_id, stage, position, ai_score, ai_summary, 
 - Before committing: `npm run build` and `npm run lint` must pass.
 - Data access goes through react-query hooks in `src/hooks/`, not directly in components.
 - Customer-data pages (jobs, candidates, kanban) are scoped with `useActiveOrg()`: query by `activeOrgId` and insert with `organization_id: activeOrgId`. Admins pick it in the header "Organization" selector, which also has **All** (`isAll === true`, `activeOrgId === null`): then list data from every organization (show an Organization column) and make create forms ask for the organization. Customers are fixed to their own organization.
-- Job statuses: `draft` (saved, not published; only a title is required) → `open` → `closed`. Publishing a draft requires a work place type.
+- Job lifecycle: `draft` (only a title required) → `open` ⇄ `on_hold` (paused; Edit + Reopen), `open` → `closed` → `archived`. Publishing a draft requires a work place type. Closed and archived jobs can't be edited; closed can only be archived; archived jobs are read-only history, hidden from the "All" tab. Draft and open jobs can be deleted. Rules live in `src/lib/job-status.ts`.
+- "Created by" on jobs is `jobs.created_by_email`, set by a database trigger (not spoofable, survives user deletion).
 - UI pattern for changes: edits and destructive actions use a confirmation step and a success toast (`toast.success` from sonner); errors are shown inside the dialog.
 - Database changes are **always** new migration files in `supabase/migrations/`; never edit an applied migration.
 - Small, focused commits using Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`.

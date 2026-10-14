@@ -1,4 +1,4 @@
-import { AlertTriangle, Archive, ArchiveRestore, Loader2, Send } from "lucide-react";
+import { AlertTriangle, Archive, CircleSlash, Loader2, Pause, Play, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -14,60 +14,96 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useUpdateJob, type JobStatus, type JobWithCounts } from "@/hooks/useJobs";
+import type { JobStatusActionKey } from "@/lib/job-status";
 
-type Action = {
+type ActionConfig = {
   label: string;
   icon: React.ComponentType;
   next: JobStatus;
   title: string;
   confirmLabel: string;
   toastTitle: string;
+  toastDescription: string; // after the job title, e.g. "is now open."
   description: (title: React.ReactNode) => React.ReactNode;
 };
 
-const ACTIONS: Record<JobStatus, Action> = {
-  draft: {
+const ACTIONS: Record<JobStatusActionKey, ActionConfig> = {
+  publish: {
     label: "Publish",
     icon: Send,
     next: "open",
     title: "Publish job?",
     confirmLabel: "Yes, publish",
     toastTitle: "Job published",
+    toastDescription: "is now open.",
     description: (t) => <>Publish {t} and start recruiting for it?</>,
   },
-  open: {
+  hold: {
+    label: "Put on hold",
+    icon: Pause,
+    next: "on_hold",
+    title: "Put job on hold?",
+    confirmLabel: "Yes, put on hold",
+    toastTitle: "Job on hold",
+    toastDescription: "is on hold. Reopen it to continue recruiting.",
+    description: (t) => (
+      <>
+        Put {t} on hold? Recruiting is paused; its candidates stay in the pipeline. You can reopen
+        it at any time.
+      </>
+    ),
+  },
+  reopen: {
+    label: "Reopen",
+    icon: Play,
+    next: "open",
+    title: "Reopen job?",
+    confirmLabel: "Yes, reopen",
+    toastTitle: "Job reopened",
+    toastDescription: "is open again.",
+    description: (t) => <>Reopen {t} and continue recruiting?</>,
+  },
+  close: {
     label: "Close",
-    icon: Archive,
+    icon: CircleSlash,
     next: "closed",
     title: "Close job?",
     confirmLabel: "Yes, close job",
     toastTitle: "Job closed",
+    toastDescription: "is now closed.",
     description: (t) => (
-      <>Close {t}? Its candidates stay in the pipeline. You can reopen the job at any time.</>
+      <>
+        Close {t}? Recruiting stops for good: a closed job can't be edited or reopened, only
+        archived. Its candidates stay in the pipeline.
+      </>
     ),
   },
-  closed: {
-    label: "Reopen",
-    icon: ArchiveRestore,
-    next: "open",
-    title: "Reopen job?",
-    confirmLabel: "Yes, reopen job",
-    toastTitle: "Job reopened",
-    description: (t) => <>Reopen {t} and start recruiting for it again?</>,
+  archive: {
+    label: "Archive",
+    icon: Archive,
+    next: "archived",
+    title: "Archive job?",
+    confirmLabel: "Yes, archive",
+    toastTitle: "Job archived",
+    toastDescription: "was moved to Archived.",
+    description: (t) => (
+      <>Archive {t}? It moves to the Archived tab and is kept as read-only history.</>
+    ),
   },
 };
 
+type Props = { job: JobWithCounts; action: JobStatusActionKey };
+
 /**
- * Status changes with confirmation and a success toast:
- * draft → Publish (open), open → Close, closed → Reopen.
- * Publishing needs a work place type (drafts may be saved without one).
+ * One status change (e.g. Put on hold) with confirmation and a success toast.
+ * Publishing a draft needs a work place type (drafts may be saved without one).
  */
-export function JobStatusDialog({ job }: { job: JobWithCounts }) {
+export function JobStatusDialog({ job, action: actionKey }: Props) {
   const [open, setOpen] = useState(false);
   const updateJob = useUpdateJob();
-  const action = ACTIONS[job.status];
+  const action = ACTIONS[actionKey];
   const Icon = action.icon;
-  const missingForPublish = job.status === "draft" && !job.workplace_type;
+  const missingForPublish = actionKey === "publish" && !job.workplace_type;
   const title = <strong className="text-foreground">{job.title}</strong>;
 
   const handleOpenChange = (next: boolean) => {
@@ -79,7 +115,7 @@ export function JobStatusDialog({ job }: { job: JobWithCounts }) {
     try {
       await updateJob.mutateAsync({ id: job.id, status: action.next });
       toast.success(action.toastTitle, {
-        description: `"${job.title}" is now ${action.next === "open" ? "open" : "closed"}.`,
+        description: `"${job.title}" ${action.toastDescription}`,
       });
       setOpen(false);
     } catch {
