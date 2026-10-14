@@ -1,4 +1,4 @@
-import { Building2, History, Search, X } from "lucide-react";
+import { Building2, History, RefreshCw, Search, X } from "lucide-react";
 import { useState } from "react";
 
 import { Pagination } from "@/components/common/Pagination";
@@ -22,6 +22,7 @@ import {
   ACTIVITY_PAGE_SIZE,
   useActivityActors,
   useActivityLog,
+  useRefreshActivity,
   type ActivityLogEntry,
   type ActivityLogFilters,
 } from "@/hooks/useActivityLog";
@@ -137,6 +138,13 @@ function ActivityLogView({
     ...filters,
   });
   const { data: actors } = useActivityActors(orgId);
+  const refreshActivity = useRefreshActivity();
+
+  // The newest entries are on page 1, so a refresh goes there (filters are kept).
+  const refresh = () => {
+    setPage(1);
+    void refreshActivity();
+  };
 
   const setFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setFilters((f) => ({ ...f, [key]: value }));
@@ -156,12 +164,22 @@ function ActivityLogView({
   return (
     <>
       <div className="mb-4 flex flex-wrap items-end gap-3">
-        <div className="relative w-full sm:w-72">
+        <Button
+          variant="outline"
+          onClick={refresh}
+          disabled={isFetching}
+          aria-label="Refresh activity log"
+          title="Load the latest activity"
+        >
+          <RefreshCw className={cn(isFetching && "animate-spin")} />
+          Refresh
+        </Button>
+        <div className="relative w-full sm:w-56">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
             aria-label="Search activity"
-            placeholder="Search by item or user email"
+            placeholder="Search item or email"
             className="pl-9"
             value={search}
             onChange={(e) => {
@@ -171,7 +189,7 @@ function ActivityLogView({
           />
         </div>
 
-        <div className="w-40 space-y-1">
+        <div className="w-36 space-y-1">
           <Label htmlFor="log-action" className="text-xs text-muted-foreground">
             Action
           </Label>
@@ -207,7 +225,7 @@ function ActivityLogView({
           </NativeSelect>
         </div>
 
-        <div className="w-52 space-y-1">
+        <div className="w-48 space-y-1">
           <Label htmlFor="log-user" className="text-xs text-muted-foreground">
             User
           </Label>

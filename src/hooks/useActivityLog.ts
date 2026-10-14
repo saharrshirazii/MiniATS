@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { LogAction, LogEntityType } from "@/lib/activity-log";
 import { supabase } from "@/lib/supabase";
@@ -100,4 +100,10 @@ export function useActivityActors(orgId: string | null, enabled = true) {
     },
     enabled,
   });
+}
+
+/** Fetch the latest entries again (the list and the user filter), e.g. from a Refresh button. */
+export function useRefreshActivity() {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: activityKeys.all });
 }
