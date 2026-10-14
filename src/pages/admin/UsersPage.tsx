@@ -1,6 +1,8 @@
 import { UserCog } from "lucide-react";
 
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
+import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
+import { EditUserDialog } from "@/components/admin/EditUserDialog";
 import { EmptyState, ErrorMessage, LoadingRows } from "@/components/common/StatusMessages";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -37,14 +39,17 @@ export function UsersPage() {
 
       {users && users.length > 0 && (
         <div className="rounded-lg border">
-          <Table className="min-w-[760px] table-fixed">
+          <Table className="min-w-[900px] table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[22%] pl-4">Name</TableHead>
-                <TableHead className="w-[28%]">Email</TableHead>
-                <TableHead className="w-[14%]">Role</TableHead>
-                <TableHead className="w-[20%]">Organization</TableHead>
-                <TableHead className="w-[16%] pr-4">Created</TableHead>
+                <TableHead className="w-[19%] pl-4">Name</TableHead>
+                <TableHead className="w-[23%]">Email</TableHead>
+                <TableHead className="w-[11%]">Role</TableHead>
+                <TableHead className="w-[15%]">Organization</TableHead>
+                <TableHead className="w-[12%]">Created</TableHead>
+                <TableHead className="w-[20%] pr-4 text-right">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -67,8 +72,14 @@ export function UsersPage() {
                   <TableCell className="truncate">
                     {user.organization?.name ?? <span className="text-muted-foreground">—</span>}
                   </TableCell>
-                  <TableCell className="pr-4 text-muted-foreground">
+                  <TableCell className="text-muted-foreground">
                     {formatDate(user.created_at)}
+                  </TableCell>
+                  <TableCell className="pr-4 text-right">
+                    <div className="flex justify-end gap-1">
+                      <EditUserDialog user={user} isSelf={user.id === currentUser?.id} />
+                      <DeleteUserDialog user={user} isSelf={user.id === currentUser?.id} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
