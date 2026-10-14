@@ -17,7 +17,7 @@ Recruiting teams post jobs, add candidates and move them through a hiring pipeli
 - [ ] **Admin** creates accounts (admin and customer)
 - [ ] **Customer** logs in
 - [ ] **Customer** posts jobs they are recruiting for
-- [ ] **Customer** adds candidates with profile info (LinkedIn, email, CV)
+- [x] **Customer** adds candidates with profile info (LinkedIn, email), with CV auto-fill
 - [ ] **Customer** sees a compact Kanban of all candidates linked to their jobs
 - [ ] **Customer** filters the Kanban by job and candidate name
 - [ ] **Admin** can do everything a customer can, on the customer's behalf
@@ -113,6 +113,7 @@ npm run db:types     # regenerate src/types/database.types.ts
 ```bash
 npx supabase functions deploy create-user
 npx supabase functions deploy delete-user
+npx supabase functions deploy parse-cv
 npx supabase functions deploy assess-cv
 npx supabase secrets set LLM_API_KEY=<your-key>
 ```
@@ -121,6 +122,7 @@ npx supabase secrets set LLM_API_KEY=<your-key>
 |---|---|
 | `create-user` | Admin-only. Verifies the caller is an admin, then creates the account and its profile (role, organization). |
 | `delete-user` | Admin-only. Deletes an account (not your own). The database keeps at least one admin. |
+| `parse-cv` | Any signed-in user. Reads an uploaded CV (PDF) and returns contact details to pre-fill the candidate form. Touches no data. |
 
 Tests (requires [Deno](https://deno.com)):
 ```bash

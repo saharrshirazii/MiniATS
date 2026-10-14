@@ -421,3 +421,8 @@ verify_jwt = true
 
 [functions.delete-user]
 verify_jwt = true
+
+# MiniATS: read an uploaded CV to pre-fill the candidate form. Any signed-in
+# user may call it; verify_jwt rejects anonymous calls.
+[functions.parse-cv]
+verify_jwt = true
