@@ -21,12 +21,20 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useActiveOrg } from "@/hooks/useActiveOrg";
-import { useCreateJob, useUpdateJob, type JobWithCounts } from "@/hooks/useJobs";
+import {
+  useCreateJob,
+  useUpdateJob,
+  type JobWithCounts,
+} from "@/hooks/useJobs";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { WORKPLACE_TYPES, workplaceLabel } from "@/lib/constants";
 
 const schema = z.object({
-  title: z.string().trim().min(1, "Job title is required").max(200, "Job title is too long"),
+  title: z
+    .string()
+    .trim()
+    .min(1, "Job title is required")
+    .max(200, "Job title is too long"),
   location: z.string().trim().max(200, "Job location is too long"),
   // "" = nothing chosen yet (the select's placeholder); required on submit.
   workplace_type: z
@@ -102,7 +110,8 @@ export function JobFormDialog(props: Props) {
           `Work place type: ${workplaceLabel(initial.workplace_type || null) ?? "—"} → ${
             workplaceLabel(values.workplace_type || null) ?? "—"
           }`,
-        values.description.trim() !== initial.description.trim() && "Description updated",
+        values.description.trim() !== initial.description.trim() &&
+          "Description updated",
       ].filter(Boolean) as string[])
     : [];
 
@@ -120,10 +129,14 @@ export function JobFormDialog(props: Props) {
     try {
       if (isEdit) {
         await updateJob.mutateAsync({ id: props.job.id, ...toInput(v) });
-        toast.success("Job updated", { description: `Changes to "${v.title.trim()}" were saved.` });
+        toast.success("Job updated", {
+          description: `Changes to "${v.title.trim()}" were saved.`,
+        });
       } else {
         if (!v.organization_id) {
-          form.setError("organization_id", { message: "Choose an organization" });
+          form.setError("organization_id", {
+            message: "Choose an organization",
+          });
           return;
         }
         await createJob.mutateAsync({
@@ -165,7 +178,11 @@ export function JobFormDialog(props: Props) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {isEdit ? (
-          <Button variant="ghost" size="sm" aria-label={`Edit ${props.job.title}`}>
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`Edit ${props.job.title}`}
+          >
             <Pencil />
             Edit
           </Button>
@@ -191,8 +208,14 @@ export function JobFormDialog(props: Props) {
               </DialogDescription>
             </DialogHeader>
 
-            <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)} noValidate>
-              {mutation.error && <ErrorMessage message={mutation.error.message} />}
+            <form
+              className="space-y-4"
+              onSubmit={form.handleSubmit(onSubmit)}
+              noValidate
+            >
+              {mutation.error && (
+                <ErrorMessage message={mutation.error.message} />
+              )}
 
               {showOrgField && (
                 <FormField
@@ -215,7 +238,11 @@ export function JobFormDialog(props: Props) {
                 </FormField>
               )}
 
-              <FormField id="job-title" label="Job title" error={errors.title?.message}>
+              <FormField
+                id="job-title"
+                label="Job title"
+                error={errors.title?.message}
+              >
                 <Input
                   id="job-title"
                   placeholder="Frontend Developer"
@@ -226,7 +253,11 @@ export function JobFormDialog(props: Props) {
               </FormField>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <FormField id="job-location" label="Job location" error={errors.location?.message}>
+                <FormField
+                  id="job-location"
+                  label="Job location"
+                  error={errors.location?.message}
+                >
                   <Input
                     id="job-location"
                     placeholder="Gothenburg"
@@ -270,7 +301,11 @@ export function JobFormDialog(props: Props) {
               </FormField>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                >
                   Cancel
                 </Button>
                 {!isEdit && (
@@ -286,9 +321,13 @@ export function JobFormDialog(props: Props) {
                 )}
                 <Button
                   type="submit"
-                  disabled={(isEdit && changes.length === 0) || createJob.isPending}
+                  disabled={
+                    (isEdit && changes.length === 0) || createJob.isPending
+                  }
                 >
-                  {!isEdit && createJob.isPending && <Loader2 className="animate-spin" />}
+                  {!isEdit && createJob.isPending && (
+                    <Loader2 className="animate-spin" />
+                  )}
                   {isEdit ? "Save changes" : "Create job"}
                 </Button>
               </DialogFooter>
@@ -298,7 +337,9 @@ export function JobFormDialog(props: Props) {
           <>
             <DialogHeader>
               <DialogTitle>Confirm changes</DialogTitle>
-              <DialogDescription>Save these changes to this job?</DialogDescription>
+              <DialogDescription>
+                Save these changes to this job?
+              </DialogDescription>
             </DialogHeader>
 
             <ul className="list-disc space-y-1 pl-5 text-sm">
@@ -316,7 +357,11 @@ export function JobFormDialog(props: Props) {
               >
                 Back
               </Button>
-              <Button type="button" onClick={() => save(values)} disabled={updateJob.isPending}>
+              <Button
+                type="button"
+                onClick={() => save(values)}
+                disabled={updateJob.isPending}
+              >
                 {updateJob.isPending && <Loader2 className="animate-spin" />}
                 Yes, save
               </Button>

@@ -28,7 +28,11 @@ import { useCreateUser } from "@/hooks/useUsers";
 const schema = z
   .object({
     full_name: z.string().trim().max(200),
-    email: z.string().trim().min(1, "Email is required").email("Enter a valid email address"),
+    email: z
+      .string()
+      .trim()
+      .min(1, "Email is required")
+      .email("Enter a valid email address"),
     password: z
       .string()
       .min(8, "At least 8 characters")
@@ -56,7 +60,10 @@ export function CreateUserDialog() {
   const createUser = useCreateUser();
   const { data: organizations = [] } = useOrganizations();
 
-  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues });
+  const form = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues,
+  });
   const { errors, isSubmitting } = form.formState;
   const role = form.watch("role");
 
@@ -74,7 +81,8 @@ export function CreateUserDialog() {
         email: values.email,
         password: values.password,
         role: values.role,
-        organization_id: values.role === "customer" ? values.organization_id : null,
+        organization_id:
+          values.role === "customer" ? values.organization_id : null,
         full_name: values.full_name || null,
       });
       toast.success(`Account created for ${values.email}`, {
@@ -98,16 +106,25 @@ export function CreateUserDialog() {
         <DialogHeader>
           <DialogTitle>New user</DialogTitle>
           <DialogDescription>
-            Create an account. The user can sign in right away with this password.
+            Create an account. The user can sign in right away with this
+            password.
           </DialogDescription>
         </DialogHeader>
 
-        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)} noValidate>
-          {createUser.error && <ErrorMessage message={createUser.error.message} />}
+        <form
+          className="space-y-4"
+          onSubmit={form.handleSubmit(onSubmit)}
+          noValidate
+        >
+          {createUser.error && (
+            <ErrorMessage message={createUser.error.message} />
+          )}
 
           <FormField id="user-role" label="Role">
             <NativeSelect id="user-role" {...form.register("role")}>
-              <option value="customer">Customer – sees their organization's data</option>
+              <option value="customer">
+                Customer – sees their organization's data
+              </option>
               <option value="admin">Admin – manages all organizations</option>
             </NativeSelect>
           </FormField>
@@ -117,7 +134,11 @@ export function CreateUserDialog() {
               id="user-org"
               label="Organization"
               error={errors.organization_id?.message}
-              hint={organizations.length === 0 ? "Create an organization first." : undefined}
+              hint={
+                organizations.length === 0
+                  ? "Create an organization first."
+                  : undefined
+              }
             >
               <NativeSelect
                 id="user-org"
@@ -134,11 +155,23 @@ export function CreateUserDialog() {
             </FormField>
           )}
 
-          <FormField id="user-name" label="Full name" error={errors.full_name?.message}>
-            <Input id="user-name" placeholder="Anna Andersson" {...form.register("full_name")} />
+          <FormField
+            id="user-name"
+            label="Full name"
+            error={errors.full_name?.message}
+          >
+            <Input
+              id="user-name"
+              placeholder="Anna Andersson"
+              {...form.register("full_name")}
+            />
           </FormField>
 
-          <FormField id="user-email" label="Email" error={errors.email?.message}>
+          <FormField
+            id="user-email"
+            label="Email"
+            error={errors.email?.message}
+          >
             <Input
               id="user-email"
               type="email"
@@ -168,7 +201,9 @@ export function CreateUserDialog() {
                 type="button"
                 variant="outline"
                 onClick={() =>
-                  form.setValue("password", generatePassword(), { shouldValidate: true })
+                  form.setValue("password", generatePassword(), {
+                    shouldValidate: true,
+                  })
                 }
               >
                 <RefreshCw />
@@ -178,7 +213,11 @@ export function CreateUserDialog() {
           </FormField>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>

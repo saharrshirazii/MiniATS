@@ -5,7 +5,10 @@ import { STAGES } from "@/lib/constants";
 export function KanbanPage() {
   return (
     <>
-      <PageHeader title="Pipeline" description="All candidates across your jobs." />
+      <PageHeader
+        title="Pipeline"
+        description="All candidates across your jobs."
+      />
       <div className="flex gap-3 overflow-x-auto pb-2">
         {STAGES.map((stage) => (
           <section

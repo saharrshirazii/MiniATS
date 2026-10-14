@@ -23,6 +23,8 @@ Recruiting teams post jobs, add candidates and move them through a hiring pipeli
 - [ ] **Admin** can do everything a customer can, on the customer's behalf
 
 ### Extra
+- [x] Activity log: every change recorded by database triggers (append-only); admins see all organizations, customers see their own, with search, filters and paging
+- [x] Job lifecycle (draft, open, on hold, closed, archived) and soft delete with 90-day restore
 - [ ] AI-based CV assessment (score, strengths, gaps, summary)
 
 ---

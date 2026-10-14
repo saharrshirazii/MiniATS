@@ -3,7 +3,11 @@ import { Building2 } from "lucide-react";
 import { CreateOrganizationDialog } from "@/components/admin/CreateOrganizationDialog";
 import { DeleteOrganizationDialog } from "@/components/admin/DeleteOrganizationDialog";
 import { EditOrganizationDialog } from "@/components/admin/EditOrganizationDialog";
-import { EmptyState, ErrorMessage, LoadingRows } from "@/components/common/StatusMessages";
+import {
+  EmptyState,
+  ErrorMessage,
+  LoadingRows,
+} from "@/components/common/StatusMessages";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
   Table,
@@ -28,7 +32,11 @@ export function OrganizationsPage() {
       />
 
       {isPending && <LoadingRows />}
-      {error && <ErrorMessage message={`Could not load organizations: ${error.message}`} />}
+      {error && (
+        <ErrorMessage
+          message={`Could not load organizations: ${error.message}`}
+        />
+      )}
 
       {organizations?.length === 0 && (
         <EmptyState
@@ -55,10 +63,15 @@ export function OrganizationsPage() {
             <TableBody>
               {organizations.map((org) => (
                 <TableRow key={org.id}>
-                  <TableCell className="truncate pl-4 font-medium" title={org.name}>
+                  <TableCell
+                    className="truncate pl-4 font-medium"
+                    title={org.name}
+                  >
                     {org.name}
                   </TableCell>
-                  <TableCell className="tabular-nums">{org.userCount}</TableCell>
+                  <TableCell className="tabular-nums">
+                    {org.userCount}
+                  </TableCell>
                   <TableCell className="tabular-nums">{org.jobCount}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDate(org.created_at)}

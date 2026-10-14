@@ -6,13 +6,23 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 
 const loginSchema = z.object({
-  email: z.string().trim().min(1, "Email is required").email("Enter a valid email address"),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required")
+    .email("Enter a valid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -23,9 +33,12 @@ type LocationState = { from?: { pathname: string } } | null;
 /** Turn Supabase auth errors into messages a user understands. */
 function toFriendlyMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : "";
-  if (/invalid login credentials/i.test(message)) return "Wrong email or password.";
-  if (/email not confirmed/i.test(message)) return "This account has not been confirmed yet.";
-  if (/failed to fetch|network/i.test(message)) return "Could not reach the server. Check your connection.";
+  if (/invalid login credentials/i.test(message))
+    return "Wrong email or password.";
+  if (/email not confirmed/i.test(message))
+    return "This account has not been confirmed yet.";
+  if (/failed to fetch|network/i.test(message))
+    return "Could not reach the server. Check your connection.";
   return "Something went wrong. Please try again.";
 }
 
@@ -66,10 +79,16 @@ export function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-xl">Sign in to MiniATS</CardTitle>
-          <CardDescription>Use the account your administrator created for you.</CardDescription>
+          <CardDescription>
+            Use the account your administrator created for you.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <form
+            className="space-y-4"
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+          >
             {submitError && (
               <div
                 role="alert"
@@ -90,7 +109,11 @@ export function LoginPage() {
                 aria-invalid={!!errors.email}
                 {...register("email")}
               />
-              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+              {errors.email && (
+                <p className="text-sm text-destructive">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -103,7 +126,9 @@ export function LoginPage() {
                 {...register("password")}
               />
               {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.password.message}
+                </p>
               )}
             </div>
 

@@ -21,7 +21,11 @@ import { Input } from "@/components/ui/input";
 import { useUpdateOrganization } from "@/hooks/useOrganizations";
 
 const schema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(200, "Name is too long"),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Name is required")
+    .max(200, "Name is too long"),
 });
 
 type Values = z.infer<typeof schema>;
@@ -59,7 +63,10 @@ export function EditOrganizationDialog({ organization }: Props) {
 
   const confirmRename = async () => {
     try {
-      const updated = await updateOrganization.mutateAsync({ id: organization.id, name: newName });
+      const updated = await updateOrganization.mutateAsync({
+        id: organization.id,
+        name: newName,
+      });
       toast.success("Organization updated", {
         description: `"${organization.name}" was renamed to "${updated.name}".`,
       });
@@ -73,7 +80,11 @@ export function EditOrganizationDialog({ organization }: Props) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" aria-label={`Edit ${organization.name}`}>
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={`Edit ${organization.name}`}
+        >
           <Pencil />
           Edit
         </Button>
@@ -84,7 +95,9 @@ export function EditOrganizationDialog({ organization }: Props) {
           <>
             <DialogHeader>
               <DialogTitle>Edit organization</DialogTitle>
-              <DialogDescription>Change the name shown to admins and users.</DialogDescription>
+              <DialogDescription>
+                Change the name shown to admins and users.
+              </DialogDescription>
             </DialogHeader>
 
             <form
@@ -93,7 +106,9 @@ export function EditOrganizationDialog({ organization }: Props) {
               noValidate
             >
               {updateOrganization.error && (
-                <ErrorMessage message={`Could not save: ${updateOrganization.error.message}`} />
+                <ErrorMessage
+                  message={`Could not save: ${updateOrganization.error.message}`}
+                />
               )}
 
               <FormField
@@ -110,7 +125,11 @@ export function EditOrganizationDialog({ organization }: Props) {
               </FormField>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={unchanged}>
@@ -124,9 +143,10 @@ export function EditOrganizationDialog({ organization }: Props) {
             <DialogHeader>
               <DialogTitle>Confirm changes</DialogTitle>
               <DialogDescription>
-                Rename <strong className="text-foreground">{organization.name}</strong> to{" "}
-                <strong className="text-foreground">{newName}</strong>? All users of this
-                organization will see the new name.
+                Rename{" "}
+                <strong className="text-foreground">{organization.name}</strong>{" "}
+                to <strong className="text-foreground">{newName}</strong>? All
+                users of this organization will see the new name.
               </DialogDescription>
             </DialogHeader>
 
@@ -139,8 +159,14 @@ export function EditOrganizationDialog({ organization }: Props) {
               >
                 Back
               </Button>
-              <Button type="button" onClick={confirmRename} disabled={updateOrganization.isPending}>
-                {updateOrganization.isPending && <Loader2 className="animate-spin" />}
+              <Button
+                type="button"
+                onClick={confirmRename}
+                disabled={updateOrganization.isPending}
+              >
+                {updateOrganization.isPending && (
+                  <Loader2 className="animate-spin" />
+                )}
                 Yes, rename
               </Button>
             </DialogFooter>

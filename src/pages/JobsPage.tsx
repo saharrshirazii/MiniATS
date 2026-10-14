@@ -3,10 +3,17 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Pagination } from "@/components/common/Pagination";
-import { EmptyState, ErrorMessage, LoadingRows } from "@/components/common/StatusMessages";
+import {
+  EmptyState,
+  ErrorMessage,
+  LoadingRows,
+} from "@/components/common/StatusMessages";
 import { JobFormDialog } from "@/components/jobs/JobFormDialog";
 import { DeleteJobDialog } from "@/components/jobs/DeleteJobDialog";
-import { PurgeJobDialog, RestoreJobDialog } from "@/components/jobs/DeletedJobActions";
+import {
+  PurgeJobDialog,
+  RestoreJobDialog,
+} from "@/components/jobs/DeletedJobActions";
 import { JobStatusDialog } from "@/components/jobs/JobStatusDialog";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +45,11 @@ const PAGE_SIZE = 10;
 
 const STATUS_BADGE: Record<
   JobStatus,
-  { label: string; variant: "default" | "secondary" | "outline"; className?: string }
+  {
+    label: string;
+    variant: "default" | "secondary" | "outline";
+    className?: string;
+  }
 > = {
   open: { label: "Open", variant: "default" },
   on_hold: {
@@ -82,8 +93,18 @@ function WhoAndWhen({ job }: { job: JobWithCounts }) {
 }
 
 export function JobsPage() {
-  const { activeOrgId, activeOrgName, isAll, canSwitch, loading: orgLoading } = useActiveOrg();
-  const { data: jobs, isPending, error } = useJobs({ orgId: activeOrgId, all: isAll });
+  const {
+    activeOrgId,
+    activeOrgName,
+    isAll,
+    canSwitch,
+    loading: orgLoading,
+  } = useActiveOrg();
+  const {
+    data: jobs,
+    isPending,
+    error,
+  } = useJobs({ orgId: activeOrgId, all: isAll });
   const [filter, setFilter] = useState<Filter>("open");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -103,7 +124,8 @@ export function JobsPage() {
   // Soft-deleted jobs only reach admins (RLS) and only appear in the Deleted tab.
   const active = matching.filter((j) => !j.deleted_at);
   const deleted = matching.filter((j) => j.deleted_at);
-  const countOf = (status: JobStatus) => active.filter((j) => j.status === status).length;
+  const countOf = (status: JobStatus) =>
+    active.filter((j) => j.status === status).length;
   const counts: Record<Filter, number> = {
     // "All" leaves out archived jobs; they have their own tab.
     all: active.length - countOf("archived"),
@@ -116,17 +138,24 @@ export function JobsPage() {
   };
   const filters = FILTERS.filter((f) => f.value !== "deleted" || canSwitch);
   const filterLabel =
-    filter === "all" ? "" : `${FILTERS.find((f) => f.value === filter)?.label.toLowerCase()} `;
+    filter === "all"
+      ? ""
+      : `${FILTERS.find((f) => f.value === filter)?.label.toLowerCase()} `;
   const showingDeleted = filter === "deleted";
   const filtered =
     filter === "deleted"
       ? deleted
-      : active.filter((j) => (filter === "all" ? j.status !== "archived" : j.status === filter));
+      : active.filter((j) =>
+          filter === "all" ? j.status !== "archived" : j.status === filter,
+        );
 
   // Clamp in case the list shrank (search, filter, organization switch, close).
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const visibleJobs = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const visibleJobs = filtered.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
 
   const header = (
     <PageHeader
@@ -172,7 +201,9 @@ export function JobsPage() {
       {header}
 
       {(isPending || orgLoading) && <LoadingRows />}
-      {error && <ErrorMessage message={`Could not load jobs: ${error.message}`} />}
+      {error && (
+        <ErrorMessage message={`Could not load jobs: ${error.message}`} />
+      )}
 
       {jobs && jobs.length === 0 && (
         <EmptyState
@@ -185,7 +216,11 @@ export function JobsPage() {
       {jobs && jobs.length > 0 && (
         <>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div role="tablist" aria-label="Filter jobs by status" className="flex gap-1">
+            <div
+              role="tablist"
+              aria-label="Filter jobs by status"
+              className="flex gap-1"
+            >
               {filters.map((f) => (
                 <button
                   key={f.value}
@@ -204,12 +239,16 @@ export function JobsPage() {
                   )}
                 >
                   {f.label}{" "}
-                  <span className="ml-1 text-xs text-muted-foreground">{counts[f.value]}</span>
+                  <span className="ml-1 text-xs text-muted-foreground">
+                    {counts[f.value]}
+                  </span>
                 </button>
               ))}
             </div>
 
-            <div className={cn("relative w-full", isAll ? "sm:w-96" : "sm:w-72")}>
+            <div
+              className={cn("relative w-full", isAll ? "sm:w-96" : "sm:w-72")}
+            >
               <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
@@ -231,24 +270,42 @@ export function JobsPage() {
 
           {filtered.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              {term ? `No ${filterLabel}jobs match "${search.trim()}".` : `No ${filterLabel}jobs.`}
+              {term
+                ? `No ${filterLabel}jobs match "${search.trim()}".`
+                : `No ${filterLabel}jobs.`}
             </p>
           ) : (
             <>
               <div className="rounded-lg border">
-                <Table className={cn("table-fixed", isAll ? "min-w-[1060px]" : "min-w-[940px]")}>
+                <Table
+                  className={cn(
+                    "table-fixed",
+                    isAll ? "min-w-[1060px]" : "min-w-[940px]",
+                  )}
+                >
                   <TableHeader>
                     <TableRow>
-                      <TableHead className={cn("pl-4", isAll ? "w-[19%]" : "w-[25%]")}>
+                      <TableHead
+                        className={cn("pl-4", isAll ? "w-[19%]" : "w-[25%]")}
+                      >
                         Title
                       </TableHead>
-                      {isAll && <TableHead className="w-[11%]">Organization</TableHead>}
+                      {isAll && (
+                        <TableHead className="w-[11%]">Organization</TableHead>
+                      )}
                       <TableHead className="w-[8%]">Status</TableHead>
-                      <TableHead className={isAll ? "w-[8%]" : "w-[9%]"}>Candidates</TableHead>
+                      <TableHead className={isAll ? "w-[8%]" : "w-[9%]"}>
+                        Candidates
+                      </TableHead>
                       <TableHead className={isAll ? "w-[17%]" : "w-[20%]"}>
                         {showingDeleted ? "Deleted by" : "Created by"}
                       </TableHead>
-                      <TableHead className={cn("pr-4 text-right", isAll ? "w-[37%]" : "w-[38%]")}>
+                      <TableHead
+                        className={cn(
+                          "pr-4 text-right",
+                          isAll ? "w-[37%]" : "w-[38%]",
+                        )}
+                      >
                         <span className="sr-only">Actions</span>
                       </TableHead>
                     </TableRow>
@@ -263,14 +320,20 @@ export function JobsPage() {
                           {(job.location || job.workplace_type) && (
                             <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
                               <MapPin className="size-3 shrink-0" />
-                              {[job.location, workplaceLabel(job.workplace_type)]
+                              {[
+                                job.location,
+                                workplaceLabel(job.workplace_type),
+                              ]
                                 .filter(Boolean)
                                 .join(" · ")}
                             </p>
                           )}
                         </TableCell>
                         {isAll && (
-                          <TableCell className="truncate" title={job.organizationName ?? undefined}>
+                          <TableCell
+                            className="truncate"
+                            title={job.organizationName ?? undefined}
+                          >
                             {job.organizationName}
                           </TableCell>
                         )}
@@ -291,7 +354,9 @@ export function JobsPage() {
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell className="tabular-nums">{job.candidateCount}</TableCell>
+                        <TableCell className="tabular-nums">
+                          {job.candidateCount}
+                        </TableCell>
                         <TableCell>
                           <WhoAndWhen job={job} />
                         </TableCell>
@@ -308,7 +373,11 @@ export function JobsPage() {
                                   <JobFormDialog mode="edit" job={job} />
                                 )}
                                 {STATUS_ACTIONS[job.status].map((action) => (
-                                  <JobStatusDialog key={action} job={job} action={action} />
+                                  <JobStatusDialog
+                                    key={action}
+                                    job={job}
+                                    action={action}
+                                  />
                                 ))}
                                 {DELETABLE_STATUSES.includes(job.status) && (
                                   <DeleteJobDialog job={job} />

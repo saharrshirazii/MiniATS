@@ -4,7 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { supabase } from "@/lib/supabase";
 
-import { AuthContext, type AuthContextValue, type Profile } from "./auth-context";
+import {
+  AuthContext,
+  type AuthContextValue,
+  type Profile,
+} from "./auth-context";
 
 async function fetchProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
@@ -32,9 +36,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Keep state in sync with sign-in, sign-out and token refresh.
     // Note: don't call other Supabase methods inside this callback — it can deadlock.
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-    });
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        setSession(newSession);
+      },
+    );
 
     return () => subscription.subscription.unsubscribe();
   }, []);
@@ -49,7 +55,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (error) throw error;
     setSignedOutByUser(false);
   }, []);

@@ -3,7 +3,8 @@ import type { Enums } from "@/types/database.types";
 type JobStatus = Enums<"job_status">;
 
 /** Status changes a user can make from the jobs list. */
-export type JobStatusActionKey = "publish" | "hold" | "reopen" | "close" | "archive";
+export type JobStatusActionKey =
+  "publish" | "hold" | "reopen" | "close" | "archive";
 
 /**
  * Lifecycle: draft → open ⇄ on hold, open → closed → archived.
@@ -31,3 +32,12 @@ export function daysUntilPurge(deletedAt: string, now = new Date()): number {
   const elapsed = (now.getTime() - new Date(deletedAt).getTime()) / 86_400_000;
   return Math.max(0, Math.ceil(DELETED_RETENTION_DAYS - elapsed));
 }
+
+/** Human-readable job status, e.g. for the activity log. */
+export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
+  draft: "Draft",
+  open: "Open",
+  on_hold: "On hold",
+  closed: "Closed",
+  archived: "Archived",
+};

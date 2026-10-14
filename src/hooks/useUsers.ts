@@ -41,14 +41,24 @@ export type CreateUserInput = {
 };
 
 type CreateUserResponse = {
-  user: { id: string; email: string; role: Enums<"user_role">; organization_id: string | null };
+  user: {
+    id: string;
+    email: string;
+    role: Enums<"user_role">;
+    organization_id: string | null;
+  };
 };
 
 /** Read the `{ error }` message our Edge Function returns on 4xx/5xx. */
 async function functionErrorMessage(error: unknown): Promise<string> {
   if (error instanceof FunctionsHttpError) {
     const body: unknown = await error.context.json().catch(() => null);
-    if (body && typeof body === "object" && "error" in body && typeof body.error === "string") {
+    if (
+      body &&
+      typeof body === "object" &&
+      "error" in body &&
+      typeof body.error === "string"
+    ) {
       return body.error;
     }
   }
@@ -61,9 +71,10 @@ export function useCreateUser() {
 
   return useMutation({
     mutationFn: async (input: CreateUserInput) => {
-      const { data, error } = await supabase.functions.invoke<CreateUserResponse>("create-user", {
-        body: input,
-      });
+      const { data, error } =
+        await supabase.functions.invoke<CreateUserResponse>("create-user", {
+          body: input,
+        });
 
       if (error) throw new Error(await functionErrorMessage(error));
       return data!;

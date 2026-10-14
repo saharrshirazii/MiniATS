@@ -38,7 +38,9 @@ export function DeleteUserDialog({ user, isSelf }: Props) {
   const confirmDelete = async () => {
     try {
       await deleteUser.mutateAsync(user.id);
-      toast.success("User deleted", { description: `${user.email} can no longer sign in.` });
+      toast.success("User deleted", {
+        description: `${user.email} can no longer sign in.`,
+      });
       setOpen(false);
     } catch {
       // Error is shown in the dialog.
@@ -68,7 +70,8 @@ export function DeleteUserDialog({ user, isSelf }: Props) {
                 You can't delete your own account
               </DialogTitle>
               <DialogDescription>
-                Ask another admin to delete it, so the app always keeps an admin who can sign in.
+                Ask another admin to delete it, so the app always keeps an admin
+                who can sign in.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -83,12 +86,14 @@ export function DeleteUserDialog({ user, isSelf }: Props) {
               <DialogTitle>Delete user?</DialogTitle>
               <DialogDescription>
                 Delete <strong className="text-foreground">{label}</strong>
-                {user.full_name && <> ({user.email})</>}? They will no longer be able to sign in.
-                This cannot be undone.
+                {user.full_name && <> ({user.email})</>}? They will no longer be
+                able to sign in. This cannot be undone.
               </DialogDescription>
             </DialogHeader>
 
-            {deleteUser.error && <ErrorMessage message={deleteUser.error.message} />}
+            {deleteUser.error && (
+              <ErrorMessage message={deleteUser.error.message} />
+            )}
 
             <DialogFooter>
               <Button

@@ -15,3 +15,16 @@ export function generatePassword(length = 14): string {
   const values = crypto.getRandomValues(new Uint32Array(length));
   return Array.from(values, (v) => chars[v % chars.length]).join("");
 }
+
+const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/** "14 Oct 2026, 21:14" (local time) */
+export function formatDateTime(iso: string): string {
+  return dateTimeFormatter.format(new Date(iso));
+}

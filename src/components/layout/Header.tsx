@@ -19,13 +19,17 @@ export function Header() {
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b px-4 md:px-6">
-      <span className="text-lg font-semibold tracking-tight md:hidden">MiniATS</span>
+      <span className="text-lg font-semibold tracking-tight md:hidden">
+        MiniATS
+      </span>
       <OrgSelector />
 
       <div className="ml-auto flex items-center gap-3">
         <div className="hidden text-right sm:block">
           <p className="text-sm leading-tight font-medium">{displayName}</p>
-          <p className="text-xs text-muted-foreground">{isAdmin ? "Admin" : "Customer"}</p>
+          <p className="text-xs text-muted-foreground">
+            {isAdmin ? "Admin" : "Customer"}
+          </p>
         </div>
         <Button variant="ghost" size="sm" onClick={handleSignOut}>
           <LogOut />

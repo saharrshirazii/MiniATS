@@ -60,7 +60,10 @@ export function EditUserDialog({ user, isSelf }: Props) {
     organization_id: user.organization_id ?? "",
   };
 
-  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: initial });
+  const form = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: initial,
+  });
   const { errors } = form.formState;
   const values = form.watch();
   const nextOrgId = values.role === "admin" ? "" : values.organization_id;
@@ -72,7 +75,8 @@ export function EditUserDialog({ user, isSelf }: Props) {
   const changes = [
     values.full_name.trim() !== initial.full_name.trim() &&
       `Name: "${initial.full_name || "—"}" → "${values.full_name.trim() || "—"}"`,
-    values.role !== initial.role && `Role: ${roleLabel(initial.role)} → ${roleLabel(values.role)}`,
+    values.role !== initial.role &&
+      `Role: ${roleLabel(initial.role)} → ${roleLabel(values.role)}`,
     nextOrgId !== initial.organization_id &&
       `Organization: ${orgName(initial.organization_id)} → ${orgName(nextOrgId)}`,
   ].filter(Boolean) as string[];
@@ -127,10 +131,19 @@ export function EditUserDialog({ user, isSelf }: Props) {
               onSubmit={form.handleSubmit(() => setStep("confirm"))}
               noValidate
             >
-              {updateUser.error && <ErrorMessage message={updateUser.error.message} />}
+              {updateUser.error && (
+                <ErrorMessage message={updateUser.error.message} />
+              )}
 
-              <FormField id={`edit-name-${user.id}`} label="Full name" error={errors.full_name?.message}>
-                <Input id={`edit-name-${user.id}`} {...form.register("full_name")} />
+              <FormField
+                id={`edit-name-${user.id}`}
+                label="Full name"
+                error={errors.full_name?.message}
+              >
+                <Input
+                  id={`edit-name-${user.id}`}
+                  {...form.register("full_name")}
+                />
               </FormField>
 
               <FormField
@@ -141,13 +154,25 @@ export function EditUserDialog({ user, isSelf }: Props) {
                 {isSelf ? (
                   // Display only: a disabled registered field would be read as empty
                   // by react-hook-form, so the role stays in form state unchanged.
-                  <NativeSelect id={`edit-role-${user.id}`} disabled value={user.role} onChange={() => {}}>
+                  <NativeSelect
+                    id={`edit-role-${user.id}`}
+                    disabled
+                    value={user.role}
+                    onChange={() => {}}
+                  >
                     <option value={user.role}>{roleLabel(user.role)}</option>
                   </NativeSelect>
                 ) : (
-                  <NativeSelect id={`edit-role-${user.id}`} {...form.register("role")}>
-                    <option value="customer">Customer – sees their organization's data</option>
-                    <option value="admin">Admin – manages all organizations</option>
+                  <NativeSelect
+                    id={`edit-role-${user.id}`}
+                    {...form.register("role")}
+                  >
+                    <option value="customer">
+                      Customer – sees their organization's data
+                    </option>
+                    <option value="admin">
+                      Admin – manages all organizations
+                    </option>
                   </NativeSelect>
                 )}
               </FormField>
@@ -174,7 +199,11 @@ export function EditUserDialog({ user, isSelf }: Props) {
               )}
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={changes.length === 0}>
@@ -188,7 +217,8 @@ export function EditUserDialog({ user, isSelf }: Props) {
             <DialogHeader>
               <DialogTitle>Confirm changes</DialogTitle>
               <DialogDescription>
-                Save these changes for <strong className="text-foreground">{user.email}</strong>?
+                Save these changes for{" "}
+                <strong className="text-foreground">{user.email}</strong>?
               </DialogDescription>
             </DialogHeader>
 
@@ -207,7 +237,11 @@ export function EditUserDialog({ user, isSelf }: Props) {
               >
                 Back
               </Button>
-              <Button type="button" onClick={confirmSave} disabled={updateUser.isPending}>
+              <Button
+                type="button"
+                onClick={confirmSave}
+                disabled={updateUser.isPending}
+              >
                 {updateUser.isPending && <Loader2 className="animate-spin" />}
                 Yes, save
               </Button>
