@@ -147,7 +147,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
-          created_by_name: string | null
+          created_by_email: string | null
           description: string | null
           id: string
           location: string | null
@@ -160,7 +160,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
-          created_by_name?: string | null
+          created_by_email?: string | null
           description?: string | null
           id?: string
           location?: string | null
@@ -173,7 +173,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
-          created_by_name?: string | null
+          created_by_email?: string | null
           description?: string | null
           id?: string
           location?: string | null
@@ -268,7 +268,7 @@ export type Database = {
         | "offer"
         | "hired"
         | "rejected"
-      job_status: "draft" | "open" | "closed"
+      job_status: "draft" | "open" | "on_hold" | "closed" | "archived"
       user_role: "admin" | "customer"
       workplace_type: "on_site" | "hybrid" | "remote"
     }
@@ -409,7 +409,7 @@ export const Constants = {
         "hired",
         "rejected",
       ],
-      job_status: ["draft", "open", "closed"],
+      job_status: ["draft", "open", "on_hold", "closed", "archived"],
       user_role: ["admin", "customer"],
       workplace_type: ["on_site", "hybrid", "remote"],
     },
