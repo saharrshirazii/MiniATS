@@ -9,37 +9,52 @@ export type JobStatus = Enums<"job_status">;
 
 export type JobWithCounts = Pick<
   Tables<"jobs">,
-  "id" | "organization_id" | "title" | "location" | "workplace_type" | "description" | "status" | "created_at"
-> & { candidateCount: number };
+  | "id"
+  | "organization_id"
+  | "title"
+  | "location"
+  | "workplace_type"
+  | "description"
+  | "status"
+  | "created_at"
+> & { candidateCount: number; organizationName: string | null };
 
 export const jobKeys = {
   all: ["jobs"] as const,
   byOrg: (orgId: string) => ["jobs", orgId] as const,
 };
 
-async function fetchJobs(orgId: string): Promise<JobWithCounts[]> {
-  const { data, error } = await supabase
+/** orgId = one organization; null = every organization the caller can see (admins: all). */
+async function fetchJobs(orgId: string | null): Promise<JobWithCounts[]> {
+  let query = supabase
     .from("jobs")
     .select(
-      "id, organization_id, title, location, workplace_type, description, status, created_at, applications(count)",
+      "id, organization_id, title, location, workplace_type, description, status, created_at, applications(count), organization:organizations(name)",
     )
-    .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
 
+  if (orgId) query = query.eq("organization_id", orgId);
+
+  const { data, error } = await query;
   if (error) throw error;
 
-  return data.map(({ applications, ...job }) => ({
+  return data.map(({ applications, organization, ...job }) => ({
     ...job,
     candidateCount: applications[0]?.count ?? 0,
+    organizationName: organization?.name ?? null,
   }));
 }
 
-/** Jobs of one organization (the active one), newest first. */
-export function useJobs(orgId: string | null) {
+/**
+ * Jobs of the active organization, or of all organizations (admin "All"),
+ * newest first. Disabled while there is neither.
+ */
+export function useJobs(scope: { orgId: string | null; all: boolean }) {
+  const { orgId, all } = scope;
   return useQuery({
-    queryKey: jobKeys.byOrg(orgId ?? "none"),
-    queryFn: () => fetchJobs(orgId!),
-    enabled: !!orgId,
+    queryKey: jobKeys.byOrg(all ? "all" : (orgId ?? "none")),
+    queryFn: () => fetchJobs(all ? null : orgId),
+    enabled: all || !!orgId,
   });
 }
 
@@ -54,7 +69,7 @@ export function useCreateJob() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ orgId, ...job }: JobInput & { orgId: string }) => {
+    mutationFn: async ({ orgId, ...job }: JobInput & { orgId: string; status: JobStatus }) => {
       const { data, error } = await supabase
         .from("jobs")
         .insert({ ...job, organization_id: orgId })
@@ -76,12 +91,11 @@ export function useUpdateJob() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...changes }: Partial<JobInput> & { id: string; status?: JobStatus }) => {
-      const { data, error } = await supabase
-        .from("jobs")
-        .update(changes)
-        .eq("id", id)
-        .select("id");
+    mutationFn: async ({
+      id,
+      ...changes
+    }: Partial<JobInput> & { id: string; status?: JobStatus }) => {
+      const { data, error } = await supabase.from("jobs").update(changes).eq("id", id).select("id");
 
       if (error) throw new Error(`Could not update job: ${error.message}`);
       if (data.length === 0) throw new Error("Job not found, or you are not allowed to edit it.");

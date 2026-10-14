@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Pencil, Plus } from "lucide-react";
+import { FileText, Loader2, Pencil, Plus } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -63,10 +63,11 @@ export function JobFormDialog(props: Props) {
   const mutation = isEdit ? updateJob : createJob;
 
   // Admins pick the organization when creating; customers are fixed to their own.
-  const { activeOrgId, canSwitch, setActiveOrgId } = useActiveOrg();
+  const { activeOrgId, isAll, canSwitch, setActiveOrgId } = useActiveOrg();
   const { data: organizations = [] } = useOrganizations();
   const showOrgField = !isEdit && canSwitch;
-  const orgName = (id: string) => organizations.find((o) => o.id === id)?.name ?? "the organization";
+  const orgName = (id: string) =>
+    organizations.find((o) => o.id === id)?.name ?? "the organization";
 
   const initial: FormState = isEdit
     ? {
@@ -115,7 +116,7 @@ export function JobFormDialog(props: Props) {
     }
   };
 
-  const save = async (v: FormState) => {
+  const save = async (v: FormState, asDraft = false) => {
     try {
       if (isEdit) {
         await updateJob.mutateAsync({ id: props.job.id, ...toInput(v) });
@@ -125,12 +126,24 @@ export function JobFormDialog(props: Props) {
           form.setError("organization_id", { message: "Choose an organization" });
           return;
         }
-        await createJob.mutateAsync({ orgId: v.organization_id, ...toInput(v) });
-        toast.success("Job created", {
-          description: `"${v.title.trim()}" was added to ${orgName(v.organization_id)}.`,
+        await createJob.mutateAsync({
+          orgId: v.organization_id,
+          status: asDraft ? "draft" : "open",
+          ...toInput(v),
         });
-        // Show the organization the job was created in.
-        if (canSwitch && v.organization_id !== activeOrgId) setActiveOrgId(v.organization_id);
+        if (asDraft) {
+          toast.success("Draft saved", {
+            description: `"${v.title.trim()}" was saved as a draft in ${orgName(v.organization_id)}. Publish it when it's ready.`,
+          });
+        } else {
+          toast.success("Job created", {
+            description: `"${v.title.trim()}" was added to ${orgName(v.organization_id)}.`,
+          });
+        }
+        // Show the organization the job was created in (unless viewing All).
+        if (canSwitch && !isAll && v.organization_id !== activeOrgId) {
+          setActiveOrgId(v.organization_id);
+        }
       }
       setOpen(false);
     } catch {
@@ -139,6 +152,14 @@ export function JobFormDialog(props: Props) {
   };
 
   const onSubmit = (v: ValidJob) => (isEdit ? setStep("confirm") : save(v));
+
+  // A draft only needs a title (and an organization for admins); the other
+  // details — like the work place type — can be added before publishing.
+  const saveDraft = async () => {
+    form.clearErrors();
+    const valid = await form.trigger(["title", "location", "description"]);
+    if (valid) await save(form.getValues(), true);
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -149,7 +170,7 @@ export function JobFormDialog(props: Props) {
             Edit
           </Button>
         ) : (
-          <Button disabled={!activeOrgId}>
+          <Button disabled={!activeOrgId && !isAll}>
             <Plus />
             New job
           </Button>
@@ -252,9 +273,20 @@ export function JobFormDialog(props: Props) {
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
+                {!isEdit && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={saveDraft}
+                    disabled={createJob.isPending}
+                  >
+                    <FileText />
+                    Save as draft
+                  </Button>
+                )}
                 <Button
                   type="submit"
-                  disabled={(isEdit && changes.length === 0) || form.formState.isSubmitting}
+                  disabled={(isEdit && changes.length === 0) || createJob.isPending}
                 >
                   {!isEdit && createJob.isPending && <Loader2 className="animate-spin" />}
                   {isEdit ? "Save changes" : "Create job"}

@@ -265,7 +265,7 @@ export type Database = {
         | "offer"
         | "hired"
         | "rejected"
-      job_status: "open" | "closed"
+      job_status: "draft" | "open" | "closed"
       user_role: "admin" | "customer"
       workplace_type: "on_site" | "hybrid" | "remote"
     }
@@ -406,7 +406,7 @@ export const Constants = {
         "hired",
         "rejected",
       ],
-      job_status: ["open", "closed"],
+      job_status: ["draft", "open", "closed"],
       user_role: ["admin", "customer"],
       workplace_type: ["on_site", "hybrid", "remote"],
     },

@@ -28,20 +28,30 @@ type Filter = "all" | JobStatus;
 
 const PAGE_SIZE = 10;
 
+const STATUS_BADGE: Record<
+  JobStatus,
+  { label: string; variant: "default" | "secondary" | "outline" }
+> = {
+  open: { label: "Open", variant: "default" },
+  closed: { label: "Closed", variant: "secondary" },
+  draft: { label: "Draft", variant: "outline" },
+};
+
 const FILTERS: { value: Filter; label: string }[] = [
   { value: "open", label: "Open" },
   { value: "closed", label: "Closed" },
+  { value: "draft", label: "Draft" },
   { value: "all", label: "All" },
 ];
 
 export function JobsPage() {
-  const { activeOrgId, activeOrgName, canSwitch, loading: orgLoading } = useActiveOrg();
-  const { data: jobs, isPending, error } = useJobs(activeOrgId);
+  const { activeOrgId, activeOrgName, isAll, canSwitch, loading: orgLoading } = useActiveOrg();
+  const { data: jobs, isPending, error } = useJobs({ orgId: activeOrgId, all: isAll });
   const [filter, setFilter] = useState<Filter>("open");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  // Search title and location (case-insensitive). Jobs per organization are few,
+  // Search title, location and (with "All") organization name — case-insensitive. Jobs per organization are few,
   // so filtering in the browser is fine; move to the database if that changes.
   const term = search.trim().toLowerCase();
   const matching =
@@ -49,13 +59,15 @@ export function JobsPage() {
       (j) =>
         !term ||
         j.title.toLowerCase().includes(term) ||
-        (j.location ?? "").toLowerCase().includes(term),
+        (j.location ?? "").toLowerCase().includes(term) ||
+        (isAll && (j.organizationName ?? "").toLowerCase().includes(term)),
     ) ?? [];
 
   const counts = {
     all: matching.length,
     open: matching.filter((j) => j.status === "open").length,
     closed: matching.filter((j) => j.status === "closed").length,
+    draft: matching.filter((j) => j.status === "draft").length,
   };
   const filtered = matching.filter((j) => filter === "all" || j.status === filter);
 
@@ -68,16 +80,18 @@ export function JobsPage() {
     <PageHeader
       title="Jobs"
       description={
-        activeOrgName
-          ? `Positions ${activeOrgName} is recruiting for.`
-          : "Positions you are recruiting for."
+        isAll
+          ? "Positions all organizations are recruiting for."
+          : activeOrgName
+            ? `Positions ${activeOrgName} is recruiting for.`
+            : "Positions you are recruiting for."
       }
       actions={<JobFormDialog mode="create" />}
     />
   );
 
   // Admin without any organization yet.
-  if (!orgLoading && !activeOrgId) {
+  if (!orgLoading && !activeOrgId && !isAll) {
     return (
       <>
         {header}
@@ -143,12 +157,16 @@ export function JobsPage() {
               ))}
             </div>
 
-            <div className="relative w-full sm:w-72">
+            <div className={cn("relative w-full", isAll ? "sm:w-96" : "sm:w-72")}>
               <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
                 aria-label="Search jobs"
-                placeholder="Search by title or location"
+                placeholder={
+                  isAll
+                    ? "Search by title, location or organization"
+                    : "Search by title or location"
+                }
                 className="pl-9"
                 value={search}
                 onChange={(e) => {
@@ -168,14 +186,17 @@ export function JobsPage() {
           ) : (
             <>
               <div className="rounded-lg border">
-                <Table className="min-w-[760px] table-fixed">
+                <Table className={cn("table-fixed", isAll ? "min-w-[900px]" : "min-w-[760px]")}>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[38%] pl-4">Title</TableHead>
-                      <TableHead className="w-[12%]">Status</TableHead>
-                      <TableHead className="w-[12%]">Candidates</TableHead>
-                      <TableHead className="w-[14%]">Created</TableHead>
-                      <TableHead className="w-[24%] pr-4 text-right">
+                      <TableHead className={cn("pl-4", isAll ? "w-[28%]" : "w-[36%]")}>
+                        Title
+                      </TableHead>
+                      {isAll && <TableHead className="w-[16%]">Organization</TableHead>}
+                      <TableHead className="w-[10%]">Status</TableHead>
+                      <TableHead className="w-[11%]">Candidates</TableHead>
+                      <TableHead className="w-[12%]">Created</TableHead>
+                      <TableHead className={cn("pr-4 text-right", isAll ? "w-[23%]" : "w-[31%]")}>
                         <span className="sr-only">Actions</span>
                       </TableHead>
                     </TableRow>
@@ -196,9 +217,14 @@ export function JobsPage() {
                             </p>
                           )}
                         </TableCell>
+                        {isAll && (
+                          <TableCell className="truncate" title={job.organizationName ?? undefined}>
+                            {job.organizationName}
+                          </TableCell>
+                        )}
                         <TableCell>
-                          <Badge variant={job.status === "open" ? "default" : "secondary"}>
-                            {job.status === "open" ? "Open" : "Closed"}
+                          <Badge variant={STATUS_BADGE[job.status].variant}>
+                            {STATUS_BADGE[job.status].label}
                           </Badge>
                         </TableCell>
                         <TableCell className="tabular-nums">{job.candidateCount}</TableCell>
