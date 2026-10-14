@@ -20,7 +20,9 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
+import { useActiveOrg } from "@/hooks/useActiveOrg";
 import { useCreateJob, useUpdateJob, type JobWithCounts } from "@/hooks/useJobs";
+import { useOrganizations } from "@/hooks/useOrganizations";
 import { WORKPLACE_TYPES, workplaceLabel } from "@/lib/constants";
 
 const schema = z.object({
@@ -31,15 +33,15 @@ const schema = z.object({
     .union([z.enum(["on_site", "hybrid", "remote"]), z.literal("")])
     .refine((v) => v !== "", "Choose a work place type"),
   description: z.string().trim().max(10_000, "Job description is too long"),
+  // Only admins choose the organization (customers always use their own).
+  organization_id: z.string(),
 });
 
 // What the form holds (may still be "" for work place type) vs. what validation returns.
 type FormState = z.input<typeof schema>;
 type ValidJob = z.output<typeof schema>;
 
-type Props =
-  | { mode: "create"; orgId: string | null; orgName: string | null }
-  | { mode: "edit"; job: JobWithCounts };
+type Props = { mode: "create" } | { mode: "edit"; job: JobWithCounts };
 
 const toInput = (v: FormState) => ({
   title: v.title.trim(),
@@ -60,14 +62,27 @@ export function JobFormDialog(props: Props) {
   const updateJob = useUpdateJob();
   const mutation = isEdit ? updateJob : createJob;
 
+  // Admins pick the organization when creating; customers are fixed to their own.
+  const { activeOrgId, canSwitch, setActiveOrgId } = useActiveOrg();
+  const { data: organizations = [] } = useOrganizations();
+  const showOrgField = !isEdit && canSwitch;
+  const orgName = (id: string) => organizations.find((o) => o.id === id)?.name ?? "the organization";
+
   const initial: FormState = isEdit
     ? {
         title: props.job.title,
         location: props.job.location ?? "",
         workplace_type: props.job.workplace_type ?? "",
         description: props.job.description ?? "",
+        organization_id: props.job.organization_id,
       }
-    : { title: "", location: "", workplace_type: "", description: "" };
+    : {
+        title: "",
+        location: "",
+        workplace_type: "",
+        description: "",
+        organization_id: activeOrgId ?? "",
+      };
 
   const form = useForm<FormState, unknown, ValidJob>({
     resolver: zodResolver(schema),
@@ -106,10 +121,16 @@ export function JobFormDialog(props: Props) {
         await updateJob.mutateAsync({ id: props.job.id, ...toInput(v) });
         toast.success("Job updated", { description: `Changes to "${v.title.trim()}" were saved.` });
       } else {
-        await createJob.mutateAsync({ orgId: props.orgId!, ...toInput(v) });
+        if (!v.organization_id) {
+          form.setError("organization_id", { message: "Choose an organization" });
+          return;
+        }
+        await createJob.mutateAsync({ orgId: v.organization_id, ...toInput(v) });
         toast.success("Job created", {
-          description: `"${v.title.trim()}" was added to ${props.orgName ?? "the organization"}.`,
+          description: `"${v.title.trim()}" was added to ${orgName(v.organization_id)}.`,
         });
+        // Show the organization the job was created in.
+        if (canSwitch && v.organization_id !== activeOrgId) setActiveOrgId(v.organization_id);
       }
       setOpen(false);
     } catch {
@@ -128,7 +149,7 @@ export function JobFormDialog(props: Props) {
             Edit
           </Button>
         ) : (
-          <Button disabled={!props.orgId}>
+          <Button disabled={!activeOrgId}>
             <Plus />
             New job
           </Button>
@@ -143,12 +164,35 @@ export function JobFormDialog(props: Props) {
               <DialogDescription>
                 {isEdit
                   ? "Update the details candidates and your team see."
-                  : `A position ${props.orgName ?? "the organization"} is recruiting for.`}
+                  : showOrgField
+                    ? "A position one of your customers is recruiting for."
+                    : `A position ${orgName(activeOrgId ?? "")} is recruiting for.`}
               </DialogDescription>
             </DialogHeader>
 
             <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)} noValidate>
               {mutation.error && <ErrorMessage message={mutation.error.message} />}
+
+              {showOrgField && (
+                <FormField
+                  id="job-organization"
+                  label="Organization"
+                  error={errors.organization_id?.message}
+                >
+                  <NativeSelect
+                    id="job-organization"
+                    aria-invalid={!!errors.organization_id}
+                    {...form.register("organization_id")}
+                  >
+                    <option value="">Select organization…</option>
+                    {organizations.map((org) => (
+                      <option key={org.id} value={org.id}>
+                        {org.name}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </FormField>
+              )}
 
               <FormField id="job-title" label="Job title" error={errors.title?.message}>
                 <Input

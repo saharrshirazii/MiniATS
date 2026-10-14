@@ -72,7 +72,7 @@ export function JobsPage() {
           ? `Positions ${activeOrgName} is recruiting for.`
           : "Positions you are recruiting for."
       }
-      actions={<JobFormDialog mode="create" orgId={activeOrgId} orgName={activeOrgName} />}
+      actions={<JobFormDialog mode="create" />}
     />
   );
 
