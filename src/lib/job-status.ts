@@ -22,3 +22,12 @@ export const EDITABLE_STATUSES: JobStatus[] = ["draft", "open", "on_hold"];
 
 /** Jobs that can be deleted from the list. */
 export const DELETABLE_STATUSES: JobStatus[] = ["draft", "open"];
+
+/** Soft-deleted jobs are permanently deleted after this many days (database: purge_deleted_jobs). */
+export const DELETED_RETENTION_DAYS = 90;
+
+/** Whole days left before a soft-deleted job is purged (never negative). */
+export function daysUntilPurge(deletedAt: string, now = new Date()): number {
+  const elapsed = (now.getTime() - new Date(deletedAt).getTime()) / 86_400_000;
+  return Math.max(0, Math.ceil(DELETED_RETENTION_DAYS - elapsed));
+}

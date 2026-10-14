@@ -6,6 +6,7 @@ import { Pagination } from "@/components/common/Pagination";
 import { EmptyState, ErrorMessage, LoadingRows } from "@/components/common/StatusMessages";
 import { JobFormDialog } from "@/components/jobs/JobFormDialog";
 import { DeleteJobDialog } from "@/components/jobs/DeleteJobDialog";
+import { PurgeJobDialog, RestoreJobDialog } from "@/components/jobs/DeletedJobActions";
 import { JobStatusDialog } from "@/components/jobs/JobStatusDialog";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -20,13 +21,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useActiveOrg } from "@/hooks/useActiveOrg";
-import { useJobs, type JobStatus } from "@/hooks/useJobs";
+import { useJobs, type JobStatus, type JobWithCounts } from "@/hooks/useJobs";
 import { workplaceLabel } from "@/lib/constants";
-import { DELETABLE_STATUSES, EDITABLE_STATUSES, STATUS_ACTIONS } from "@/lib/job-status";
+import {
+  DELETABLE_STATUSES,
+  EDITABLE_STATUSES,
+  STATUS_ACTIONS,
+  daysUntilPurge,
+} from "@/lib/job-status";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-type Filter = "all" | JobStatus;
+type Filter = "all" | JobStatus | "deleted";
 
 const PAGE_SIZE = 10;
 
@@ -56,7 +62,24 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: "draft", label: "Draft" },
   { value: "archived", label: "Archived" },
   { value: "all", label: "All" },
+  // Admins only: soft-deleted jobs, restorable until they are purged.
+  { value: "deleted", label: "Deleted" },
 ];
+
+/** "Created by" (email + date), or "Deleted by" for soft-deleted jobs. */
+function WhoAndWhen({ job }: { job: JobWithCounts }) {
+  const email = job.deleted_at ? job.deleted_by_email : job.created_by_email;
+  return (
+    <>
+      <p className="truncate" title={email ?? undefined}>
+        {email ?? <span className="text-muted-foreground">—</span>}
+      </p>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        {formatDate(job.deleted_at ?? job.created_at)}
+      </p>
+    </>
+  );
+}
 
 export function JobsPage() {
   const { activeOrgId, activeOrgName, isAll, canSwitch, loading: orgLoading } = useActiveOrg();
@@ -77,19 +100,28 @@ export function JobsPage() {
         (isAll && (j.organizationName ?? "").toLowerCase().includes(term)),
     ) ?? [];
 
-  const countOf = (status: JobStatus) => matching.filter((j) => j.status === status).length;
+  // Soft-deleted jobs only reach admins (RLS) and only appear in the Deleted tab.
+  const active = matching.filter((j) => !j.deleted_at);
+  const deleted = matching.filter((j) => j.deleted_at);
+  const countOf = (status: JobStatus) => active.filter((j) => j.status === status).length;
   const counts: Record<Filter, number> = {
     // "All" leaves out archived jobs; they have their own tab.
-    all: matching.length - countOf("archived"),
+    all: active.length - countOf("archived"),
     open: countOf("open"),
     on_hold: countOf("on_hold"),
     closed: countOf("closed"),
     draft: countOf("draft"),
     archived: countOf("archived"),
+    deleted: deleted.length,
   };
-  const filtered = matching.filter((j) =>
-    filter === "all" ? j.status !== "archived" : j.status === filter,
-  );
+  const filters = FILTERS.filter((f) => f.value !== "deleted" || canSwitch);
+  const filterLabel =
+    filter === "all" ? "" : `${FILTERS.find((f) => f.value === filter)?.label.toLowerCase()} `;
+  const showingDeleted = filter === "deleted";
+  const filtered =
+    filter === "deleted"
+      ? deleted
+      : active.filter((j) => (filter === "all" ? j.status !== "archived" : j.status === filter));
 
   // Clamp in case the list shrank (search, filter, organization switch, close).
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -154,7 +186,7 @@ export function JobsPage() {
         <>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div role="tablist" aria-label="Filter jobs by status" className="flex gap-1">
-              {FILTERS.map((f) => (
+              {filters.map((f) => (
                 <button
                   key={f.value}
                   type="button"
@@ -199,9 +231,7 @@ export function JobsPage() {
 
           {filtered.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              {term
-                ? `No ${filter === "all" ? "" : `${filter} `}jobs match "${search.trim()}".`
-                : `No ${filter === "all" ? "" : filter} jobs.`}
+              {term ? `No ${filterLabel}jobs match "${search.trim()}".` : `No ${filterLabel}jobs.`}
             </p>
           ) : (
             <>
@@ -215,7 +245,9 @@ export function JobsPage() {
                       {isAll && <TableHead className="w-[11%]">Organization</TableHead>}
                       <TableHead className="w-[8%]">Status</TableHead>
                       <TableHead className={isAll ? "w-[8%]" : "w-[9%]"}>Candidates</TableHead>
-                      <TableHead className={isAll ? "w-[17%]" : "w-[20%]"}>Created by</TableHead>
+                      <TableHead className={isAll ? "w-[17%]" : "w-[20%]"}>
+                        {showingDeleted ? "Deleted by" : "Created by"}
+                      </TableHead>
                       <TableHead className={cn("pr-4 text-right", isAll ? "w-[37%]" : "w-[38%]")}>
                         <span className="sr-only">Actions</span>
                       </TableHead>
@@ -243,34 +275,45 @@ export function JobsPage() {
                           </TableCell>
                         )}
                         <TableCell>
-                          <Badge
-                            variant={STATUS_BADGE[job.status].variant}
-                            className={STATUS_BADGE[job.status].className}
-                          >
-                            {STATUS_BADGE[job.status].label}
-                          </Badge>
+                          {job.deleted_at ? (
+                            <>
+                              <Badge variant="destructive">Deleted</Badge>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {daysUntilPurge(job.deleted_at)} days left
+                              </p>
+                            </>
+                          ) : (
+                            <Badge
+                              variant={STATUS_BADGE[job.status].variant}
+                              className={STATUS_BADGE[job.status].className}
+                            >
+                              {STATUS_BADGE[job.status].label}
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell className="tabular-nums">{job.candidateCount}</TableCell>
                         <TableCell>
-                          <p className="truncate" title={job.created_by_email ?? undefined}>
-                            {job.created_by_email ?? (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            {formatDate(job.created_at)}
-                          </p>
+                          <WhoAndWhen job={job} />
                         </TableCell>
                         <TableCell className="pr-4 text-right">
                           <div className="flex justify-end gap-1">
-                            {EDITABLE_STATUSES.includes(job.status) && (
-                              <JobFormDialog mode="edit" job={job} />
-                            )}
-                            {STATUS_ACTIONS[job.status].map((action) => (
-                              <JobStatusDialog key={action} job={job} action={action} />
-                            ))}
-                            {DELETABLE_STATUSES.includes(job.status) && (
-                              <DeleteJobDialog job={job} />
+                            {job.deleted_at ? (
+                              <>
+                                <RestoreJobDialog job={job} />
+                                <PurgeJobDialog job={job} />
+                              </>
+                            ) : (
+                              <>
+                                {EDITABLE_STATUSES.includes(job.status) && (
+                                  <JobFormDialog mode="edit" job={job} />
+                                )}
+                                {STATUS_ACTIONS[job.status].map((action) => (
+                                  <JobStatusDialog key={action} job={job} action={action} />
+                                ))}
+                                {DELETABLE_STATUSES.includes(job.status) && (
+                                  <DeleteJobDialog job={job} />
+                                )}
+                              </>
                             )}
                           </div>
                         </TableCell>

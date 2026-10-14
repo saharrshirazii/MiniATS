@@ -18,6 +18,8 @@ export type JobWithCounts = Pick<
   | "status"
   | "created_at"
   | "created_by_email"
+  | "deleted_at"
+  | "deleted_by_email"
 > & { candidateCount: number; organizationName: string | null };
 
 export const jobKeys = {
@@ -30,7 +32,7 @@ async function fetchJobs(orgId: string | null): Promise<JobWithCounts[]> {
   let query = supabase
     .from("jobs")
     .select(
-      "id, organization_id, title, location, workplace_type, description, status, created_at, created_by_email, applications(count), organization:organizations(name)",
+      "id, organization_id, title, location, workplace_type, description, status, created_at, created_by_email, deleted_at, deleted_by_email, applications(count), organization:organizations(name)",
     )
     .order("created_at", { ascending: false });
 
@@ -106,22 +108,62 @@ export function useUpdateJob() {
 }
 
 /**
- * Delete a job. Its pipeline entries (applications) are removed with it;
- * the candidates themselves stay in the organization.
+ * Delete a job.
+ *   • draft → deleted permanently (it never had candidates)
+ *   • other → soft-deleted via the soft_delete_job database function: hidden
+ *     from customers, restorable by admins, purged permanently after 90 days
  */
 export function useDeleteJob() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    mutationFn: async (job: { id: string; status: JobStatus }) => {
+      if (job.status === "draft") {
+        const { data, error } = await supabase.from("jobs").delete().eq("id", job.id).select("id");
+        if (error) throw new Error(`Could not delete job: ${error.message}`);
+        if (data.length === 0)
+          throw new Error("Job not found, or you are not allowed to delete it.");
+        return;
+      }
+      const { error } = await supabase.rpc("soft_delete_job", { p_job_id: job.id });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: jobKeys.all });
+      queryClient.invalidateQueries({ queryKey: organizationKeys.all }); // job counts
+    },
+  });
+}
+
+/** Admins: bring a soft-deleted job back. */
+export function useRestoreJob() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.rpc("restore_job", { p_job_id: id });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: jobKeys.all });
+      queryClient.invalidateQueries({ queryKey: organizationKeys.all });
+    },
+  });
+}
+
+/** Admins: permanently delete a soft-deleted job now (instead of after 90 days). */
+export function usePurgeJob() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await supabase.from("jobs").delete().eq("id", id).select("id");
-
       if (error) throw new Error(`Could not delete job: ${error.message}`);
       if (data.length === 0) throw new Error("Job not found, or you are not allowed to delete it.");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: jobKeys.all });
-      queryClient.invalidateQueries({ queryKey: organizationKeys.all }); // job counts
+      queryClient.invalidateQueries({ queryKey: organizationKeys.all });
     },
   });
 }
