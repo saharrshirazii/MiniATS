@@ -1,13 +1,15 @@
-import { Briefcase, Building2, MapPin } from "lucide-react";
+import { Briefcase, Building2, MapPin, Search } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
+import { Pagination } from "@/components/common/Pagination";
 import { EmptyState, ErrorMessage, LoadingRows } from "@/components/common/StatusMessages";
 import { JobFormDialog } from "@/components/jobs/JobFormDialog";
 import { JobStatusDialog } from "@/components/jobs/JobStatusDialog";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -18,10 +20,13 @@ import {
 } from "@/components/ui/table";
 import { useActiveOrg } from "@/hooks/useActiveOrg";
 import { useJobs, type JobStatus } from "@/hooks/useJobs";
+import { workplaceLabel } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type Filter = "all" | JobStatus;
+
+const PAGE_SIZE = 10;
 
 const FILTERS: { value: Filter; label: string }[] = [
   { value: "open", label: "Open" },
@@ -33,19 +38,39 @@ export function JobsPage() {
   const { activeOrgId, activeOrgName, canSwitch, loading: orgLoading } = useActiveOrg();
   const { data: jobs, isPending, error } = useJobs(activeOrgId);
   const [filter, setFilter] = useState<Filter>("open");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  // Search title and location (case-insensitive). Jobs per organization are few,
+  // so filtering in the browser is fine; move to the database if that changes.
+  const term = search.trim().toLowerCase();
+  const matching =
+    jobs?.filter(
+      (j) =>
+        !term ||
+        j.title.toLowerCase().includes(term) ||
+        (j.location ?? "").toLowerCase().includes(term),
+    ) ?? [];
 
   const counts = {
-    all: jobs?.length ?? 0,
-    open: jobs?.filter((j) => j.status === "open").length ?? 0,
-    closed: jobs?.filter((j) => j.status === "closed").length ?? 0,
+    all: matching.length,
+    open: matching.filter((j) => j.status === "open").length,
+    closed: matching.filter((j) => j.status === "closed").length,
   };
-  const visibleJobs = jobs?.filter((j) => filter === "all" || j.status === filter) ?? [];
+  const filtered = matching.filter((j) => filter === "all" || j.status === filter);
+
+  // Clamp in case the list shrank (search, filter, organization switch, close).
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const visibleJobs = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const header = (
     <PageHeader
       title="Jobs"
       description={
-        activeOrgName ? `Positions ${activeOrgName} is recruiting for.` : "Positions you are recruiting for."
+        activeOrgName
+          ? `Positions ${activeOrgName} is recruiting for.`
+          : "Positions you are recruiting for."
       }
       actions={<JobFormDialog mode="create" orgId={activeOrgId} orgName={activeOrgName} />}
     />
@@ -93,76 +118,112 @@ export function JobsPage() {
 
       {jobs && jobs.length > 0 && (
         <>
-          <div role="tablist" aria-label="Filter jobs by status" className="mb-4 flex gap-1">
-            {FILTERS.map((f) => (
-              <button
-                key={f.value}
-                type="button"
-                role="tab"
-                aria-selected={filter === f.value}
-                onClick={() => setFilter(f.value)}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                  filter === f.value
-                    ? "bg-secondary text-secondary-foreground"
-                    : "text-muted-foreground hover:bg-secondary/60",
-                )}
-              >
-                {f.label} <span className="ml-1 text-xs text-muted-foreground">{counts[f.value]}</span>
-              </button>
-            ))}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div role="tablist" aria-label="Filter jobs by status" className="flex gap-1">
+              {FILTERS.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={filter === f.value}
+                  onClick={() => {
+                    setFilter(f.value);
+                    setPage(1);
+                  }}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                    filter === f.value
+                      ? "bg-secondary text-secondary-foreground"
+                      : "text-muted-foreground hover:bg-secondary/60",
+                  )}
+                >
+                  {f.label}{" "}
+                  <span className="ml-1 text-xs text-muted-foreground">{counts[f.value]}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="relative w-full sm:w-72">
+              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                aria-label="Search jobs"
+                placeholder="Search by title or location"
+                className="pl-9"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
           </div>
 
-          {visibleJobs.length === 0 ? (
+          {filtered.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              No {filter === "all" ? "" : filter} jobs.
+              {term
+                ? `No ${filter === "all" ? "" : `${filter} `}jobs match "${search.trim()}".`
+                : `No ${filter === "all" ? "" : filter} jobs.`}
             </p>
           ) : (
-            <div className="rounded-lg border">
-              <Table className="min-w-[760px] table-fixed">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[38%] pl-4">Title</TableHead>
-                    <TableHead className="w-[12%]">Status</TableHead>
-                    <TableHead className="w-[12%]">Candidates</TableHead>
-                    <TableHead className="w-[14%]">Created</TableHead>
-                    <TableHead className="w-[24%] pr-4 text-right">
-                      <span className="sr-only">Actions</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visibleJobs.map((job) => (
-                    <TableRow key={job.id}>
-                      <TableCell className="pl-4">
-                        <p className="truncate font-medium" title={job.title}>
-                          {job.title}
-                        </p>
-                        {job.location && (
-                          <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
-                            <MapPin className="size-3 shrink-0" />
-                            {job.location}
-                          </p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={job.status === "open" ? "default" : "secondary"}>
-                          {job.status === "open" ? "Open" : "Closed"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="tabular-nums">{job.candidateCount}</TableCell>
-                      <TableCell className="text-muted-foreground">{formatDate(job.created_at)}</TableCell>
-                      <TableCell className="pr-4 text-right">
-                        <div className="flex justify-end gap-1">
-                          <JobFormDialog mode="edit" job={job} />
-                          <JobStatusDialog job={job} />
-                        </div>
-                      </TableCell>
+            <>
+              <div className="rounded-lg border">
+                <Table className="min-w-[760px] table-fixed">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[38%] pl-4">Title</TableHead>
+                      <TableHead className="w-[12%]">Status</TableHead>
+                      <TableHead className="w-[12%]">Candidates</TableHead>
+                      <TableHead className="w-[14%]">Created</TableHead>
+                      <TableHead className="w-[24%] pr-4 text-right">
+                        <span className="sr-only">Actions</span>
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {visibleJobs.map((job) => (
+                      <TableRow key={job.id}>
+                        <TableCell className="pl-4">
+                          <p className="truncate font-medium" title={job.title}>
+                            {job.title}
+                          </p>
+                          {(job.location || job.workplace_type) && (
+                            <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
+                              <MapPin className="size-3 shrink-0" />
+                              {[job.location, workplaceLabel(job.workplace_type)]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={job.status === "open" ? "default" : "secondary"}>
+                            {job.status === "open" ? "Open" : "Closed"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="tabular-nums">{job.candidateCount}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDate(job.created_at)}
+                        </TableCell>
+                        <TableCell className="pr-4 text-right">
+                          <div className="flex justify-end gap-1">
+                            <JobFormDialog mode="edit" job={job} />
+                            <JobStatusDialog job={job} />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <Pagination
+                page={currentPage}
+                pageSize={PAGE_SIZE}
+                totalItems={filtered.length}
+                onPageChange={setPage}
+                itemLabel="jobs"
+              />
+            </>
           )}
         </>
       )}
