@@ -1,6 +1,7 @@
 import { Building2 } from "lucide-react";
 
 import { CreateOrganizationDialog } from "@/components/admin/CreateOrganizationDialog";
+import { DeleteOrganizationDialog } from "@/components/admin/DeleteOrganizationDialog";
 import { EditOrganizationDialog } from "@/components/admin/EditOrganizationDialog";
 import { EmptyState, ErrorMessage, LoadingRows } from "@/components/common/StatusMessages";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -42,11 +43,11 @@ export function OrganizationsPage() {
           <Table className="min-w-[640px] table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[36%] pl-4">Name</TableHead>
-                <TableHead className="w-[14%]">Users</TableHead>
-                <TableHead className="w-[14%]">Jobs</TableHead>
-                <TableHead className="w-[20%]">Created</TableHead>
-                <TableHead className="w-[16%] pr-4 text-right">
+                <TableHead className="w-[32%] pl-4">Name</TableHead>
+                <TableHead className="w-[12%]">Users</TableHead>
+                <TableHead className="w-[12%]">Jobs</TableHead>
+                <TableHead className="w-[18%]">Created</TableHead>
+                <TableHead className="w-[26%] pr-4 text-right">
                   <span className="sr-only">Actions</span>
                 </TableHead>
               </TableRow>
@@ -63,7 +64,10 @@ export function OrganizationsPage() {
                     {formatDate(org.created_at)}
                   </TableCell>
                   <TableCell className="pr-4 text-right">
-                    <EditOrganizationDialog organization={org} />
+                    <div className="flex justify-end gap-1">
+                      <EditOrganizationDialog organization={org} />
+                      <DeleteOrganizationDialog organization={org} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
