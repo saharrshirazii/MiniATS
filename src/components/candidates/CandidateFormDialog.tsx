@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Heart, Loader2, Plus, UploadCloud } from "lucide-react";
+import { FileText, Heart, Loader2, Plus, UploadCloud, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -70,6 +70,7 @@ type ValidCandidate = z.output<typeof schema>;
 export function CandidateFormDialog() {
   const { activeOrgId, isAll } = useActiveOrg();
   const [open, setOpen] = useState(false);
+  const [cvFileName, setCvFileName] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const createCandidate = useCreateCandidate();
@@ -99,10 +100,16 @@ export function CandidateFormDialog() {
   const { data: jobs, isPending: jobsLoading } = useJobs({ orgId: jobOrgId || null, all: false });
   const openJobs = jobs?.filter((j) => j.status === "open" && !j.deleted_at) ?? [];
 
+  const clearCv = () => {
+    setCvFileName(null);
+    if (fileInput.current) fileInput.current.value = "";
+  };
+
   const resetAll = (next: boolean) => {
     setOpen(next);
     if (next) {
       createCandidate.reset();
+      clearCv();
       reset({
         first_name: "",
         last_name: "",
@@ -200,22 +207,38 @@ export function CandidateFormDialog() {
             <div className="space-y-4 md:border-r md:pr-8">
               <h3 className="text-sm font-semibold">Who is the candidate?</h3>
 
-              <button
-                type="button"
-                onClick={() => fileInput.current?.click()}
-                disabled={parseCv.isPending}
-                className="flex w-full items-center gap-2 rounded-md border border-dashed px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent disabled:opacity-60"
-              >
-                {parseCv.isPending ? (
-                  <Loader2 className="size-4 shrink-0 animate-spin" />
-                ) : (
+              {cvFileName ? (
+                <div className="flex w-full items-center gap-2 rounded-md border px-3 py-2.5 text-sm">
+                  {parseCv.isPending ? (
+                    <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
+                  ) : (
+                    <FileText className="size-4 shrink-0 text-muted-foreground" />
+                  )}
+                  <span className="min-w-0 flex-1 truncate" title={cvFileName}>
+                    {cvFileName}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={clearCv}
+                    aria-label="Remove the attached CV"
+                    className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInput.current?.click()}
+                  className="flex w-full items-center gap-2 rounded-md border border-dashed px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent"
+                >
                   <UploadCloud className="size-4 shrink-0 text-muted-foreground" />
-                )}
-                <span>
-                  <span className="font-medium">Attach CV</span>{" "}
-                  <span className="text-muted-foreground">to auto-fill the details</span>
-                </span>
-              </button>
+                  <span>
+                    <span className="font-medium">Attach CV</span>{" "}
+                    <span className="text-muted-foreground">to auto-fill the details</span>
+                  </span>
+                </button>
+              )}
               <input
                 ref={fileInput}
                 type="file"
@@ -224,8 +247,10 @@ export function CandidateFormDialog() {
                 aria-label="Attach CV to auto-fill"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) fillFromCv(file);
-                  e.target.value = "";
+                  if (file) {
+                    setCvFileName(file.name);
+                    fillFromCv(file);
+                  }
                 }}
               />
 
