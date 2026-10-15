@@ -22,7 +22,7 @@ export const LOG_ENTITY_TYPES: { value: LogEntityType; label: string }[] = [
 /** Which actions actually occur for each item type — see the triggers in the migrations. */
 const ACTIONS_BY_ENTITY: Record<LogEntityType, LogAction[]> = {
   job: ["created", "updated", "status_changed", "deleted", "restored", "deleted_permanently"],
-  candidate: ["created", "deleted_permanently"],
+  candidate: ["created", "updated", "deleted_permanently"],
 };
 
 /** The actions worth offering in the Action filter, given the selected item type ("" = any type → every action). */
@@ -42,6 +42,11 @@ const FIELD_LABELS: Record<string, string> = {
   description: "Description",
   status: "Status",
   organization_id: "Organization",
+  full_name: "Full name",
+  email: "Email",
+  phone: "Phone",
+  linkedin_url: "LinkedIn",
+  notes: "Notes",
 };
 
 type Change = { from?: Json; to?: Json; changed?: boolean };

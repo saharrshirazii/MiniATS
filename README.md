@@ -188,7 +188,7 @@ npm run dev
 - A candidate with **no job attached** is a "talent pool" candidate — useful for people worth keeping on file before there's an open role for them. Both the Candidates page and the Dashboard can filter to just the talent pool.
 - **LinkedIn profiles can't be scraped**, so candidate enrichment (pre-filling the form from a CV) is CV-based, not LinkedIn-based.
 - CVs are stored as PDFs in a **private** Storage bucket and viewed through short-lived signed URLs — never a permanent public link.
-- The **activity log** only tracks creation and deletion for candidates (not field-level edits) for this delivery — jobs get full field-level change tracking. Candidates change less structurally than jobs do, so this felt like the right place to draw the line under the deadline; it's easy to extend later the same way jobs were done.
+- The **activity log** records creation, edits (full name, email, phone, LinkedIn, notes) and deletion for candidates, and creation, edits, status changes, soft delete/restore and permanent deletion for jobs — the fuller lifecycle jobs have.
 - The admin-only **account creation** and **CV-assessment** server logic run in Supabase Edge Functions using the `service_role` key, which never reaches the browser; every function re-checks the caller's role server-side rather than trusting the client.
 
 ---
