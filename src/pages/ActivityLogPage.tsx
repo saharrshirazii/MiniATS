@@ -28,8 +28,8 @@ import {
 } from "@/hooks/useActivityLog";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
-  LOG_ACTIONS,
   LOG_ENTITY_TYPES,
+  actionsForEntity,
   describeDetails,
   logActionLabel,
   logEntityLabel,
@@ -150,6 +150,16 @@ function ActivityLogView({
     setFilters((f) => ({ ...f, [key]: value }));
     setPage(1);
   };
+  // Changing the item type can make the current Action filter meaningless
+  // (e.g. "Status changed" only happens for jobs) — drop it when so.
+  const setEntityType = (value: LogEntityType | "") => {
+    setFilters((f) => {
+      const allowed = actionsForEntity(value);
+      const action = f.action && !allowed.includes(f.action) ? "" : f.action;
+      return { ...f, entityType: value, action };
+    });
+    setPage(1);
+  };
   const hasFilters = search !== "" || Object.values(filters).some((v) => v !== "");
   const clearFilters = () => {
     setSearch("");
@@ -189,6 +199,24 @@ function ActivityLogView({
           />
         </div>
 
+        <div className="w-32 space-y-1">
+          <Label htmlFor="log-entity" className="text-xs text-muted-foreground">
+            Item type
+          </Label>
+          <NativeSelect
+            id="log-entity"
+            value={filters.entityType}
+            onChange={(e) => setEntityType(e.target.value as LogEntityType | "")}
+          >
+            <option value="">All items</option>
+            {LOG_ENTITY_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
+
         <div className="w-36 space-y-1">
           <Label htmlFor="log-action" className="text-xs text-muted-foreground">
             Action
@@ -199,27 +227,9 @@ function ActivityLogView({
             onChange={(e) => setFilter("action", e.target.value as LogAction | "")}
           >
             <option value="">All actions</option>
-            {LOG_ACTIONS.map((a) => (
-              <option key={a.value} value={a.value}>
-                {a.label}
-              </option>
-            ))}
-          </NativeSelect>
-        </div>
-
-        <div className="w-32 space-y-1">
-          <Label htmlFor="log-entity" className="text-xs text-muted-foreground">
-            Item type
-          </Label>
-          <NativeSelect
-            id="log-entity"
-            value={filters.entityType}
-            onChange={(e) => setFilter("entityType", e.target.value as LogEntityType | "")}
-          >
-            <option value="">All items</option>
-            {LOG_ENTITY_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
+            {actionsForEntity(filters.entityType).map((value) => (
+              <option key={value} value={value}>
+                {logActionLabel(value)}
               </option>
             ))}
           </NativeSelect>

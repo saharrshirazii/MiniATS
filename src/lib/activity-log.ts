@@ -19,6 +19,18 @@ export const LOG_ENTITY_TYPES: { value: LogEntityType; label: string }[] = [
   { value: "candidate", label: "Candidate" },
 ];
 
+/** Which actions actually occur for each item type — see the triggers in the migrations. */
+const ACTIONS_BY_ENTITY: Record<LogEntityType, LogAction[]> = {
+  job: ["created", "updated", "status_changed", "deleted", "restored", "deleted_permanently"],
+  candidate: ["created", "deleted_permanently"],
+};
+
+/** The actions worth offering in the Action filter, given the selected item type ("" = any type → every action). */
+export function actionsForEntity(entityType: LogEntityType | ""): LogAction[] {
+  if (!entityType) return LOG_ACTIONS.map((a) => a.value);
+  return ACTIONS_BY_ENTITY[entityType];
+}
+
 export const logActionLabel = (a: LogAction) => LOG_ACTIONS.find((x) => x.value === a)?.label ?? a;
 export const logEntityLabel = (t: LogEntityType) =>
   LOG_ENTITY_TYPES.find((x) => x.value === t)?.label ?? t;
