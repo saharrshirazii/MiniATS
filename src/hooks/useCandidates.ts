@@ -70,18 +70,25 @@ export type CandidateInput = {
   /** When set, the candidate is added to this job's pipeline (stage "applied"). */
   jobId: string | null;
   orgId: string;
+  /** The PDF attached in the form, if any. Stored as "<orgId>/<candidateId>.pdf". */
+  cvFile?: File | null;
 };
+
+/** Where a candidate's CV lives in the private "cvs" bucket. */
+export const cvPath = (orgId: string, candidateId: string) => `${orgId}/${candidateId}.pdf`;
 
 /**
  * Create a candidate, and — if a job was chosen — add them to that job's
  * pipeline. If the pipeline insert fails the new candidate is removed again,
- * so we never leave a half-linked record behind.
+ * so we never leave a half-linked record behind. A CV upload failure does
+ * NOT roll back the candidate — the record is still useful without it —
+ * but is reported back via `cvError` so the caller can warn the user.
  */
 export function useCreateCandidate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ jobId, orgId, ...fields }: CandidateInput) => {
+    mutationFn: async ({ jobId, orgId, cvFile, ...fields }: CandidateInput) => {
       const { data: candidate, error } = await supabase
         .from("candidates")
         .insert({ ...fields, organization_id: orgId })
@@ -98,7 +105,25 @@ export function useCreateCandidate() {
           throw appError;
         }
       }
-      return candidate;
+
+      let cvError: string | null = null;
+      if (cvFile) {
+        const path = cvPath(orgId, candidate.id);
+        const { error: uploadError } = await supabase.storage
+          .from("cvs")
+          .upload(path, cvFile, { contentType: "application/pdf", upsert: true });
+        if (uploadError) {
+          cvError = uploadError.message;
+        } else {
+          const { error: pathError } = await supabase
+            .from("candidates")
+            .update({ cv_path: path })
+            .eq("id", candidate.id);
+          if (pathError) cvError = pathError.message;
+        }
+      }
+
+      return { ...candidate, cvError };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: candidateKeys.all });
@@ -139,6 +164,21 @@ export function useParseCv() {
       const { data, error } = await supabase.functions.invoke<ParsedCv>("parse-cv", { body });
       if (error) throw new Error(await readFunctionError(error));
       return data ?? { full_name: null, email: null, phone: null, linkedin_url: null };
+    },
+  });
+}
+
+/**
+ * Get a short-lived signed URL for a candidate's stored CV. The bucket is
+ * private, so viewing always goes through a fresh, expiring link rather
+ * than a permanent one.
+ */
+export function useCvSignedUrl() {
+  return useMutation({
+    mutationFn: async (path: string) => {
+      const { data, error } = await supabase.storage.from("cvs").createSignedUrl(path, 60);
+      if (error) throw error;
+      return data.signedUrl;
     },
   });
 }

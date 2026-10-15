@@ -1,6 +1,7 @@
-import { Building2, ExternalLink, Mail, Phone, Users } from "lucide-react";
+import { Building2, ExternalLink, FileText, Loader2, Mail, Phone, Users } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 import { CandidateFormDialog } from "@/components/candidates/CandidateFormDialog";
 import { DeleteCandidateDialog } from "@/components/candidates/DeleteCandidateDialog";
@@ -19,7 +20,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useActiveOrg } from "@/hooks/useActiveOrg";
-import { useCandidates, type CandidateWithApplications } from "@/hooks/useCandidates";
+import {
+  useCandidates,
+  useCvSignedUrl,
+  type CandidateWithApplications,
+} from "@/hooks/useCandidates";
 import { STAGES } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -52,6 +57,43 @@ function Contact({ candidate }: { candidate: CandidateWithApplications }) {
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * Opens a candidate's stored CV in a new tab via a freshly minted signed
+ * URL (the "cvs" bucket is private, so there is no permanent link to show).
+ * The tab is opened synchronously on click, before the URL comes back, so
+ * browsers don't treat it as an unrequested popup.
+ */
+function CvLink({ path }: { path: string }) {
+  const getSignedUrl = useCvSignedUrl();
+
+  return (
+    <button
+      type="button"
+      disabled={getSignedUrl.isPending}
+      onClick={() => {
+        const tab = window.open("", "_blank");
+        getSignedUrl.mutate(path, {
+          onSuccess: (url) => {
+            if (tab) tab.location.href = url;
+          },
+          onError: (error) => {
+            tab?.close();
+            toast.error("Could not open the CV", { description: error.message });
+          },
+        });
+      }}
+      className="inline-flex items-center gap-1 text-sm text-primary hover:underline disabled:opacity-50"
+    >
+      {getSignedUrl.isPending ? (
+        <Loader2 className="size-3 animate-spin" />
+      ) : (
+        <FileText className="size-3" />
+      )}
+      CV
+    </button>
   );
 }
 
@@ -186,7 +228,7 @@ export function CandidatesPage() {
                       </TableHead>
                       {isAll && <TableHead className="w-[12%]">Organization</TableHead>}
                       <TableHead className="w-[20%]">Contact</TableHead>
-                      <TableHead className="w-[8%]">LinkedIn</TableHead>
+                      <TableHead className="w-[8%]">Links</TableHead>
                       <TableHead className={isAll ? "w-[22%]" : "w-[28%]"}>Jobs</TableHead>
                       <TableHead className="w-[10%]">Added</TableHead>
                       <TableHead className="w-[12%] pr-4 text-right">
@@ -214,15 +256,20 @@ export function CandidatesPage() {
                           <Contact candidate={candidate} />
                         </TableCell>
                         <TableCell>
-                          {candidate.linkedin_url ? (
-                            <a
-                              href={candidate.linkedin_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                            >
-                              View <ExternalLink className="size-3" />
-                            </a>
+                          {candidate.linkedin_url || candidate.cv_path ? (
+                            <div className="flex flex-col gap-0.5">
+                              {candidate.linkedin_url && (
+                                <a
+                                  href={candidate.linkedin_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                                >
+                                  LinkedIn <ExternalLink className="size-3" />
+                                </a>
+                              )}
+                              {candidate.cv_path && <CvLink path={candidate.cv_path} />}
+                            </div>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}

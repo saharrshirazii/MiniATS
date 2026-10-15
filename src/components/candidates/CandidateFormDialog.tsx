@@ -163,7 +163,7 @@ export function CandidateFormDialog() {
 
   const onSubmit = async (values: ValidCandidate) => {
     try {
-      await createCandidate.mutateAsync({
+      const candidate = await createCandidate.mutateAsync({
         full_name: `${values.first_name} ${values.last_name}`.trim(),
         email: values.email || null,
         phone: values.phone || null,
@@ -171,13 +171,21 @@ export function CandidateFormDialog() {
         notes: values.notes || null,
         jobId: values.mode === "job" ? values.job_id : null,
         orgId: values.organization_id,
+        cvFile: fileInput.current?.files?.[0] ?? null,
       });
-      toast.success("Candidate added", {
-        description:
-          values.mode === "job"
-            ? `${values.first_name} was added to the job's pipeline.`
-            : `${values.first_name} was added to your talent pool.`,
-      });
+
+      if (candidate.cvError) {
+        toast.warning("Candidate added, but the CV could not be saved", {
+          description: candidate.cvError,
+        });
+      } else {
+        toast.success("Candidate added", {
+          description:
+            values.mode === "job"
+              ? `${values.first_name} was added to the job's pipeline.`
+              : `${values.first_name} was added to your talent pool.`,
+        });
+      }
       setOpen(false);
     } catch {
       // Error shown in the dialog.
