@@ -16,6 +16,7 @@ export const LOG_ACTIONS: { value: LogAction; label: string }[] = [
 
 export const LOG_ENTITY_TYPES: { value: LogEntityType; label: string }[] = [
   { value: "job", label: "Job" },
+  { value: "candidate", label: "Candidate" },
 ];
 
 export const logActionLabel = (a: LogAction) => LOG_ACTIONS.find((x) => x.value === a)?.label ?? a;
