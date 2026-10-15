@@ -382,9 +382,6 @@ export function CandidateFormDialog() {
               <label htmlFor="notes" className="text-sm font-medium">
                 Initial Review and Summary of the Candidate's CV
               </label>
-              <p className="text-xs text-muted-foreground">
-                How do you know them? Why are they a good fit?
-              </p>
               <Textarea id="notes" rows={3} className="mt-1" {...register("notes")} />
             </div>
           </div>
