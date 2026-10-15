@@ -9,10 +9,11 @@ type Props = {
   stage: ApplicationStage;
   label: string;
   applications: ApplicationCard[];
+  onOpenProfile?: (candidateId: string) => void;
 };
 
 /** One stage column: droppable area, sortable list of cards, count in the header. */
-export function KanbanColumn({ stage, label, applications }: Props) {
+export function KanbanColumn({ stage, label, applications, onOpenProfile }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
 
   return (
@@ -32,7 +33,11 @@ export function KanbanColumn({ stage, label, applications }: Props) {
           strategy={verticalListSortingStrategy}
         >
           {applications.map((application) => (
-            <CandidateCard key={application.id} application={application} />
+            <CandidateCard
+              key={application.id}
+              application={application}
+              onOpenProfile={onOpenProfile}
+            />
           ))}
         </SortableContext>
         {applications.length === 0 && (

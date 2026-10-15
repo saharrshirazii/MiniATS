@@ -1,6 +1,8 @@
 import { Building2, Search, X } from "lucide-react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
+import { CandidateDetailSheet } from "@/components/candidates/CandidateDetailSheet";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { EmptyState, ErrorMessage, LoadingRows } from "@/components/common/StatusMessages";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -9,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { useActiveOrg } from "@/hooks/useActiveOrg";
 import { useApplications } from "@/hooks/useApplications";
+import { useCandidates } from "@/hooks/useCandidates";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useJobs } from "@/hooks/useJobs";
 
@@ -16,6 +19,7 @@ import { useJobs } from "@/hooks/useJobs";
 export function KanbanPage() {
   const { activeOrgId, activeOrgName, isAll, canSwitch, loading: orgLoading } = useActiveOrg();
   const [params, setParams] = useSearchParams();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const jobFilter = params.get("job") ?? "";
   const search = params.get("q") ?? "";
@@ -23,6 +27,11 @@ export function KanbanPage() {
 
   const { data: jobs } = useJobs({ orgId: activeOrgId, all: false });
   const { data: applications, isPending, error } = useApplications(activeOrgId);
+  // A separate fetch for the full candidate profile (contact info, notes, every
+  // job they're linked to) shown in the detail sheet when a card is clicked —
+  // the board's own applications query only carries what a card needs to render.
+  const { data: candidates } = useCandidates({ orgId: activeOrgId, all: false });
+  const selectedCandidate = candidates?.find((c) => c.id === selectedId) ?? null;
 
   const setFilter = (key: "job" | "q", value: string) => {
     const next = new URLSearchParams(params);
@@ -149,9 +158,21 @@ export function KanbanPage() {
           {hasFilters && filtered.length === 0 && (
             <p className="mb-3 text-sm text-muted-foreground">No candidates match these filters.</p>
           )}
-          <KanbanBoard orgId={activeOrgId!} applications={filtered} />
+          <KanbanBoard
+            orgId={activeOrgId!}
+            applications={filtered}
+            onOpenProfile={setSelectedId}
+          />
         </>
       )}
+
+      <CandidateDetailSheet
+        candidate={selectedCandidate}
+        showOrganization={false}
+        onOpenChange={(open) => {
+          if (!open) setSelectedId(null);
+        }}
+      />
     </>
   );
 }

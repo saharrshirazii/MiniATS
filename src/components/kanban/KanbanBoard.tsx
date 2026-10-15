@@ -28,9 +28,11 @@ function groupByStage(applications: ApplicationCard[]) {
 export function KanbanBoard({
   orgId,
   applications,
+  onOpenProfile,
 }: {
   orgId: string;
   applications: ApplicationCard[];
+  onOpenProfile?: (candidateId: string) => void;
 }) {
   const moveApplication = useMoveApplication();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -106,10 +108,14 @@ export function KanbanBoard({
             stage={stage.value}
             label={stage.label}
             applications={groups.get(stage.value) ?? []}
+            onOpenProfile={onOpenProfile}
           />
         ))}
       </div>
-      <DragOverlay>{activeApp && <CandidateCard application={activeApp} />}</DragOverlay>
+      <DragOverlay>
+        {/* No onOpenProfile here — the overlay is a drag preview, not a clickable card. */}
+        {activeApp && <CandidateCard application={activeApp} />}
+      </DragOverlay>
     </DndContext>
   );
 }

@@ -7,7 +7,12 @@ export type ApplicationStage = Enums<"application_stage">;
 
 export type ApplicationCard = Pick<Tables<"applications">, "id" | "stage" | "position"> & {
   job: { id: string; title: string };
-  candidate: { id: string; full_name: string; linkedin_url: string | null };
+  candidate: {
+    id: string;
+    full_name: string;
+    linkedin_url: string | null;
+    cv_path: string | null;
+  };
 };
 
 export const applicationKeys = {
@@ -21,7 +26,7 @@ async function fetchApplications(orgId: string): Promise<ApplicationCard[]> {
   const { data, error } = await supabase
     .from("applications")
     .select(
-      "id, stage, position, job:jobs!inner(id, title, organization_id, deleted_at), candidate:candidates(id, full_name, linkedin_url)",
+      "id, stage, position, job:jobs!inner(id, title, organization_id, deleted_at), candidate:candidates(id, full_name, linkedin_url, cv_path)",
     )
     .eq("job.organization_id", orgId)
     .is("job.deleted_at", null)
