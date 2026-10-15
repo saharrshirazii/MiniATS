@@ -93,6 +93,12 @@ export function KanbanPage() {
             onChange={(e) => setFilter("job", e.target.value)}
           >
             <option value="">All jobs</option>
+            {/* While jobs are still loading, a job chosen via the URL (a shared link) has
+                no matching <option> yet — without this, the browser silently falls back
+                to "All jobs" until the real option appears a moment later. */}
+            {jobFilter && !jobs?.some((j) => j.id === jobFilter) && (
+              <option value={jobFilter}>Loading…</option>
+            )}
             {jobs
               ?.filter((j) => !j.deleted_at)
               .map((job) => (
