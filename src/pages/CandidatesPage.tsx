@@ -30,7 +30,9 @@ import { cn } from "@/lib/utils";
 import { Search } from "lucide-react";
 
 const PAGE_SIZE = 10;
+const TALENT_POOL = "talent-pool";
 const stageLabel = (stage: string) => STAGES.find((s) => s.value === stage)?.label ?? stage;
+const isTalentPool = (c: CandidateWithApplications) => !c.applications.some((a) => a.job);
 
 /** Contact column: email and phone, each with an icon; a dash when neither is set. */
 function Contact({ candidate }: { candidate: CandidateWithApplications }) {
@@ -62,7 +64,7 @@ function Contact({ candidate }: { candidate: CandidateWithApplications }) {
 /** The jobs a candidate is in the pipeline for, with their stage — or "Talent pool". */
 function Jobs({ candidate }: { candidate: CandidateWithApplications }) {
   const linked = candidate.applications.filter((a) => a.job);
-  if (linked.length === 0) {
+  if (isTalentPool(candidate)) {
     return (
       <Badge variant="outline" className="text-muted-foreground">
         Talent pool
@@ -102,7 +104,10 @@ export function CandidatesPage() {
           c.full_name.toLowerCase().includes(term) ||
           (c.email ?? "").toLowerCase().includes(term) ||
           (isAll && (c.organizationName ?? "").toLowerCase().includes(term))) &&
-        (!jobFilter || c.applications.some((a) => a.job?.id === jobFilter)),
+        (!jobFilter ||
+          (jobFilter === TALENT_POOL
+            ? isTalentPool(c)
+            : c.applications.some((a) => a.job?.id === jobFilter))),
     ) ?? [];
 
   const setFilter = (next: { search?: string; jobFilter?: string }) => {
@@ -179,6 +184,7 @@ export function CandidatesPage() {
                 onChange={(e) => setFilter({ jobFilter: e.target.value })}
               >
                 <option value="">All jobs</option>
+                <option value={TALENT_POOL}>Talent pool</option>
                 {jobs
                   ?.filter((j) => !j.deleted_at)
                   .map((job) => (

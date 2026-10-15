@@ -85,7 +85,7 @@ export function KanbanPage() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
         <div className="w-56">
           <NativeSelect
             aria-label="Filter by job"
