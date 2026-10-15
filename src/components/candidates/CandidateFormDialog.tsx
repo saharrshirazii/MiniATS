@@ -384,7 +384,7 @@ export function CandidateFormDialog() {
                 What else can you tell us?
               </label>
               <p className="text-xs text-muted-foreground">
-                How do you know them? Why are they a good fit?
+                Initial Review and Summary of the Candidate's CV
               </p>
               <Textarea id="notes" rows={3} className="mt-1" {...register("notes")} />
             </div>
