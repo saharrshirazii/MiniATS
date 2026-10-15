@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FileText, Heart, Loader2, Plus, UploadCloud, X } from "lucide-react";
+import { FileText, Loader2, Plus, UploadCloud, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -378,13 +378,12 @@ export function CandidateFormDialog() {
 
           {/* Notes */}
           <div className="flex gap-3 border-t pt-4">
-            <Heart className="mt-1 size-5 shrink-0 text-muted-foreground" />
             <div className="flex-1 space-y-1">
               <label htmlFor="notes" className="text-sm font-medium">
-                What else can you tell us?
+                Initial Review and Summary of the Candidate's CV
               </label>
               <p className="text-xs text-muted-foreground">
-                Initial Review and Summary of the Candidate's CV
+                How do you know them? Why are they a good fit?
               </p>
               <Textarea id="notes" rows={3} className="mt-1" {...register("notes")} />
             </div>
