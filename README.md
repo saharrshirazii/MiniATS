@@ -18,8 +18,8 @@ Recruiting teams post jobs, add candidates and move them through a hiring pipeli
 - [ ] **Customer** logs in
 - [ ] **Customer** posts jobs they are recruiting for
 - [x] **Customer** adds candidates with profile info (LinkedIn, email), with CV auto-fill
-- [ ] **Customer** sees a compact Kanban of all candidates linked to their jobs
-- [ ] **Customer** filters the Kanban by job and candidate name
+- [x] **Customer** sees a compact Kanban of all candidates linked to their jobs
+- [x] **Customer** filters the Kanban by job and candidate name
 - [ ] **Admin** can do everything a customer can, on the customer's behalf
 
 ### Extra
