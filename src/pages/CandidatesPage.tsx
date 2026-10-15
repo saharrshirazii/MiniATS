@@ -1,4 +1,4 @@
-import { Building2, ExternalLink, Mail, Phone, Users } from "lucide-react";
+import { Building2, ExternalLink, Mail, Phone, Users, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import {
   Table,
   TableBody,
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { useActiveOrg } from "@/hooks/useActiveOrg";
 import { useCandidates, type CandidateWithApplications } from "@/hooks/useCandidates";
+import { useJobs } from "@/hooks/useJobs";
 import { STAGES } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -82,7 +84,9 @@ function Jobs({ candidate }: { candidate: CandidateWithApplications }) {
 export function CandidatesPage() {
   const { activeOrgId, activeOrgName, isAll, canSwitch, loading: orgLoading } = useActiveOrg();
   const { data: candidates, isPending, error } = useCandidates({ orgId: activeOrgId, all: isAll });
+  const { data: jobs } = useJobs({ orgId: activeOrgId, all: isAll });
   const [search, setSearch] = useState("");
+  const [jobFilter, setJobFilter] = useState("");
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Look the selected candidate up fresh each render, so an edit (or any
@@ -90,14 +94,23 @@ export function CandidatesPage() {
   const selectedCandidate = candidates?.find((c) => c.id === selectedId) ?? null;
 
   const term = search.trim().toLowerCase();
+  const hasFilters = term !== "" || jobFilter !== "";
   const filtered =
     candidates?.filter(
       (c) =>
-        !term ||
-        c.full_name.toLowerCase().includes(term) ||
-        (c.email ?? "").toLowerCase().includes(term) ||
-        (isAll && (c.organizationName ?? "").toLowerCase().includes(term)),
+        (!term ||
+          c.full_name.toLowerCase().includes(term) ||
+          (c.email ?? "").toLowerCase().includes(term) ||
+          (isAll && (c.organizationName ?? "").toLowerCase().includes(term))) &&
+        (!jobFilter || c.applications.some((a) => a.job?.id === jobFilter)),
     ) ?? [];
+
+  const setFilter = (next: { search?: string; jobFilter?: string }) => {
+    if (next.search !== undefined) setSearch(next.search);
+    if (next.jobFilter !== undefined) setJobFilter(next.jobFilter);
+    setPage(1);
+  };
+  const clearFilters = () => setFilter({ search: "", jobFilter: "" });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -158,7 +171,23 @@ export function CandidatesPage() {
 
       {candidates && candidates.length > 0 && (
         <>
-          <div className="mb-4 flex justify-end">
+          <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
+            <div className="w-full sm:w-56">
+              <NativeSelect
+                aria-label="Filter by job"
+                value={jobFilter}
+                onChange={(e) => setFilter({ jobFilter: e.target.value })}
+              >
+                <option value="">All jobs</option>
+                {jobs
+                  ?.filter((j) => !j.deleted_at)
+                  .map((job) => (
+                    <option key={job.id} value={job.id}>
+                      {job.title}
+                    </option>
+                  ))}
+              </NativeSelect>
+            </div>
             <div className={cn("relative w-full", isAll ? "sm:w-96" : "sm:w-72")}>
               <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -169,17 +198,20 @@ export function CandidatesPage() {
                 }
                 className="pl-9"
                 value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
+                onChange={(e) => setFilter({ search: e.target.value })}
               />
             </div>
+            {hasFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X />
+                Clear filters
+              </Button>
+            )}
           </div>
 
           {filtered.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              No candidates match "{search.trim()}".
+              No candidates match these filters.
             </p>
           ) : (
             <>
