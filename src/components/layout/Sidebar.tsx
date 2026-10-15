@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }> };
 
 const mainNav: NavItem[] = [
-  { to: "/", label: "Pipeline", icon: KanbanSquare },
+  { to: "/", label: "Dashboard", icon: KanbanSquare },
   { to: "/jobs", label: "Jobs", icon: Briefcase },
   { to: "/candidates", label: "Candidates", icon: Users },
   { to: "/activity", label: "Activity log", icon: History },

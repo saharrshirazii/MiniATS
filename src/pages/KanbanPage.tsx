@@ -12,7 +12,7 @@ import { useApplications } from "@/hooks/useApplications";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useJobs } from "@/hooks/useJobs";
 
-/** Pipeline across every job, filterable by job and candidate name (kept in the URL, shareable). */
+/** Dashboard: the pipeline across every job, filterable by job and candidate name (kept in the URL, shareable). */
 export function KanbanPage() {
   const { activeOrgId, activeOrgName, isAll, canSwitch, loading: orgLoading } = useActiveOrg();
   const [params, setParams] = useSearchParams();
@@ -40,7 +40,7 @@ export function KanbanPage() {
     ) ?? [];
 
   const hasFilters = jobFilter !== "" || search !== "";
-  const header = <PageHeader title="Pipeline" description="All candidates across your jobs." />;
+  const header = <PageHeader title="Dashboard" description="All candidates across your jobs." />;
 
   if (!orgLoading && !activeOrgId && !isAll) {
     return (
@@ -77,7 +77,7 @@ export function KanbanPage() {
   return (
     <>
       <PageHeader
-        title="Pipeline"
+        title="Dashboard"
         description={
           activeOrgName
             ? `All candidates across ${activeOrgName}'s jobs.`
