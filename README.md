@@ -14,18 +14,20 @@ Recruiting teams post jobs, add candidates and move them through a hiring pipeli
 ## Features
 
 ### Core
-- [ ] **Admin** creates accounts (admin and customer)
-- [ ] **Customer** logs in
-- [ ] **Customer** posts jobs they are recruiting for
+- [x] **Admin** creates accounts (admin and customer)
+- [x] **Customer** logs in
+- [x] **Customer** posts jobs they are recruiting for
 - [x] **Customer** adds candidates with profile info (LinkedIn, email), with CV auto-fill
 - [x] **Customer** sees a compact Kanban of all candidates linked to their jobs
 - [x] **Customer** filters the Kanban by job and candidate name
-- [ ] **Admin** can do everything a customer can, on the customer's behalf
+- [x] **Admin** can do everything a customer can, on the customer's behalf (via the "Acting as" organization selector)
 
 ### Extra
-- [x] Activity log: every change recorded by database triggers (append-only); admins see all organizations, customers see their own, with search, filters and paging
+- [x] CV upload to private Storage, signed-URL viewing, and a candidate detail panel (contact info, CV, LinkedIn, every job they're linked to, notes — editable in place)
+- [x] "Talent pool" view: candidates not yet linked to a job, filterable from both the Candidates page and the Dashboard
+- [x] Activity log: every job/candidate change recorded by database triggers (append-only); admins see all organizations, customers see their own, with search, filters and paging
 - [x] Job lifecycle (draft, open, on hold, closed, archived) and soft delete with 90-day restore
-- [ ] AI-based CV assessment (score, strengths, gaps, summary)
+- [ ] AI-based CV assessment (score, strengths, gaps, summary) — see [AI CV assessment](#ai-cv-assessment) below
 
 ---
 
@@ -53,8 +55,9 @@ Recruiting teams post jobs, add candidates and move them through a hiring pipeli
 │  • Jobs              │  JWT   │  PostgreSQL ── data, protected by RLS │
 │  • Candidates        │ ─────► │  Storage ───── CVs (private bucket)   │
 │  • Kanban            │        │  Edge Functions                       │
-│  • Admin             │        │    • create-user (admin only)         │
-└──────────────────────┘        │    • assess-cv   (LLM call)           │
+│  • Admin             │        │    • create-user, delete-user         │
+└──────────────────────┘        │    • parse-cv    (admin / CV parsing) │
+                                │    • assess-cv   (planned — see below)│
                                 └───────────────────────────────────────┘
 ```
 
@@ -114,8 +117,6 @@ npm run db:types     # regenerate src/types/database.types.ts
 npx supabase functions deploy create-user
 npx supabase functions deploy delete-user
 npx supabase functions deploy parse-cv
-npx supabase functions deploy assess-cv
-npx supabase secrets set LLM_API_KEY=<your-key>
 ```
 
 | Function | Purpose |
@@ -123,6 +124,8 @@ npx supabase secrets set LLM_API_KEY=<your-key>
 | `create-user` | Admin-only. Verifies the caller is an admin, then creates the account and its profile (role, organization). |
 | `delete-user` | Admin-only. Deletes an account (not your own). The database keeps at least one admin. |
 | `parse-cv` | Any signed-in user. Reads an uploaded CV (PDF) and returns contact details to pre-fill the candidate form. Touches no data. |
+
+`assess-cv` (AI CV assessment) is planned but not yet deployed — see [AI CV assessment](#ai-cv-assessment) below.
 
 Tests (requires [Deno](https://deno.com)):
 ```bash
@@ -158,7 +161,7 @@ npm run dev
 ```
 ├── supabase/
 │   ├── migrations/      # Database schema and RLS policies
-│   ├── functions/       # Edge Functions (create-user, assess-cv)
+│   ├── functions/       # Edge Functions (create-user, delete-user, parse-cv)
 │   └── seed.sql         # Demo data
 └── src/
     ├── components/      # UI, layout and Kanban components
@@ -173,17 +176,33 @@ npm run dev
 
 ## Assumptions
 
+**Core**
 - A **customer is an organization** (company) that can have several users.
 - **Only admins create accounts**; there is no public sign-up.
-- Admins act on a customer's behalf by **selecting the organization** in the app, not by impersonating a user.
-- One candidate can apply to **several jobs**; each application is tracked separately.
-- Pipeline stages are **fixed** for all organizations.
+- Admins act on a customer's behalf by **selecting the organization** in the app, not by impersonating a user — all queries run as the admin (RLS grants admins full access), scoped to the chosen org.
+- One candidate can apply to **several jobs**; each application (not each candidate) is one Kanban card.
+- Pipeline stages are **fixed** for every organization: `applied → screening → interview → offer → hired | rejected`.
+
+**Made along the way**
+- A job's lifecycle is **draft → open ⇄ on hold → closed → archived**. Only a title is required for a draft; publishing requires a work-place type (on-site/hybrid/remote). Closed and archived jobs are read-only; deleting an open/on-hold job soft-deletes it (restorable by an admin for 90 days) rather than removing it outright, since it may already have candidates in its pipeline.
+- A candidate with **no job attached** is a "talent pool" candidate — useful for people worth keeping on file before there's an open role for them. Both the Candidates page and the Dashboard can filter to just the talent pool.
+- **LinkedIn profiles can't be scraped**, so candidate enrichment (pre-filling the form from a CV) is CV-based, not LinkedIn-based.
+- CVs are stored as PDFs in a **private** Storage bucket and viewed through short-lived signed URLs — never a permanent public link.
+- The **activity log** only tracks creation and deletion for candidates (not field-level edits) for this delivery — jobs get full field-level change tracking. Candidates change less structurally than jobs do, so this felt like the right place to draw the line under the deadline; it's easy to extend later the same way jobs were done.
+- The admin-only **account creation** and **CV-assessment** server logic run in Supabase Edge Functions using the `service_role` key, which never reaches the browser; every function re-checks the caller's role server-side rather than trusting the client.
 
 ---
 
 ## AI CV assessment
 
-_Approach and implementation details coming soon._
+Planned, not yet built (explained in the demo video in the meantime). The approach:
+
+1. A new `assess-cv` Edge Function, called from the candidate detail panel ("Assess fit for this job").
+2. It downloads the candidate's CV from the private `cvs` bucket and extracts the text (same PDF-parsing approach as the existing `parse-cv` function).
+3. It sends the CV text plus the target job's title/description to an LLM, asking for strict JSON:
+   `{ score: 0-100, strengths: string[], gaps: string[], summary: string }`.
+4. The result is saved on the `applications` row (`ai_score`, `ai_summary` — already in the schema) and shown on the card/detail panel.
+5. **The AI only assists.** It's a second opinion for a human reviewer to accept, ignore, or disagree with — it never moves a card or rejects a candidate on its own.
 
 ---
 
