@@ -133,6 +133,30 @@ export function useCreateCandidate() {
   });
 }
 
+export type CandidateUpdateInput = {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  linkedin_url: string | null;
+  notes: string | null;
+};
+
+/** Edit a candidate's own fields. Their organization and pipeline entries are untouched. */
+export function useUpdateCandidate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...fields }: CandidateUpdateInput) => {
+      const { error } = await supabase.from("candidates").update(fields).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: candidateKeys.all });
+    },
+  });
+}
+
 export function useDeleteCandidate() {
   const queryClient = useQueryClient();
 

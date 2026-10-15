@@ -1,9 +1,10 @@
-import { Building2, ExternalLink, FileText, Loader2, Mail, Phone, Users } from "lucide-react";
+import { Building2, ExternalLink, Mail, Phone, Users } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
 
+import { CandidateDetailSheet } from "@/components/candidates/CandidateDetailSheet";
 import { CandidateFormDialog } from "@/components/candidates/CandidateFormDialog";
+import { CvLink } from "@/components/candidates/CvLink";
 import { DeleteCandidateDialog } from "@/components/candidates/DeleteCandidateDialog";
 import { Pagination } from "@/components/common/Pagination";
 import { EmptyState, ErrorMessage, LoadingRows } from "@/components/common/StatusMessages";
@@ -20,11 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useActiveOrg } from "@/hooks/useActiveOrg";
-import {
-  useCandidates,
-  useCvSignedUrl,
-  type CandidateWithApplications,
-} from "@/hooks/useCandidates";
+import { useCandidates, type CandidateWithApplications } from "@/hooks/useCandidates";
 import { STAGES } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -60,43 +57,6 @@ function Contact({ candidate }: { candidate: CandidateWithApplications }) {
   );
 }
 
-/**
- * Opens a candidate's stored CV in a new tab via a freshly minted signed
- * URL (the "cvs" bucket is private, so there is no permanent link to show).
- * The tab is opened synchronously on click, before the URL comes back, so
- * browsers don't treat it as an unrequested popup.
- */
-function CvLink({ path }: { path: string }) {
-  const getSignedUrl = useCvSignedUrl();
-
-  return (
-    <button
-      type="button"
-      disabled={getSignedUrl.isPending}
-      onClick={() => {
-        const tab = window.open("", "_blank");
-        getSignedUrl.mutate(path, {
-          onSuccess: (url) => {
-            if (tab) tab.location.href = url;
-          },
-          onError: (error) => {
-            tab?.close();
-            toast.error("Could not open the CV", { description: error.message });
-          },
-        });
-      }}
-      className="inline-flex items-center gap-1 text-sm text-primary hover:underline disabled:opacity-50"
-    >
-      {getSignedUrl.isPending ? (
-        <Loader2 className="size-3 animate-spin" />
-      ) : (
-        <FileText className="size-3" />
-      )}
-      CV
-    </button>
-  );
-}
-
 /** The jobs a candidate is in the pipeline for, with their stage — or "Talent pool". */
 function Jobs({ candidate }: { candidate: CandidateWithApplications }) {
   const linked = candidate.applications.filter((a) => a.job);
@@ -124,6 +84,10 @@ export function CandidatesPage() {
   const { data: candidates, isPending, error } = useCandidates({ orgId: activeOrgId, all: isAll });
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Look the selected candidate up fresh each render, so an edit (or any
+  // refetch) is reflected in the open sheet instead of a stale snapshot.
+  const selectedCandidate = candidates?.find((c) => c.id === selectedId) ?? null;
 
   const term = search.trim().toLowerCase();
   const filtered =
@@ -238,7 +202,11 @@ export function CandidatesPage() {
                   </TableHeader>
                   <TableBody>
                     {visible.map((candidate) => (
-                      <TableRow key={candidate.id}>
+                      <TableRow
+                        key={candidate.id}
+                        className="cursor-pointer"
+                        onClick={() => setSelectedId(candidate.id)}
+                      >
                         <TableCell className="pl-4">
                           <p className="truncate font-medium" title={candidate.full_name}>
                             {candidate.full_name}
@@ -252,10 +220,10 @@ export function CandidatesPage() {
                             {candidate.organizationName}
                           </TableCell>
                         )}
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <Contact candidate={candidate} />
                         </TableCell>
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           {candidate.linkedin_url || candidate.cv_path ? (
                             <div className="flex flex-col gap-0.5">
                               {candidate.linkedin_url && (
@@ -280,7 +248,10 @@ export function CandidatesPage() {
                         <TableCell className="text-sm text-muted-foreground">
                           {formatDate(candidate.created_at)}
                         </TableCell>
-                        <TableCell className="pr-4 text-right">
+                        <TableCell
+                          className="pr-4 text-right"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <DeleteCandidateDialog candidate={candidate} />
                         </TableCell>
                       </TableRow>
@@ -299,6 +270,14 @@ export function CandidatesPage() {
           )}
         </>
       )}
+
+      <CandidateDetailSheet
+        candidate={selectedCandidate}
+        showOrganization={isAll}
+        onOpenChange={(open) => {
+          if (!open) setSelectedId(null);
+        }}
+      />
     </>
   );
 }
