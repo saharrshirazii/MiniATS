@@ -14,19 +14,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useActiveOrg } from "@/hooks/useActiveOrg";
 import { useAuth } from "@/hooks/useAuth";
 import { useUsers } from "@/hooks/useUsers";
+import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
 
 export function UsersPage() {
   const { user: currentUser } = useAuth();
-  const { data: users, isPending, error } = useUsers();
+  const { activeOrgId, activeOrgName, isAll } = useActiveOrg();
+  const { data: users, isPending, error } = useUsers({ orgId: activeOrgId, all: isAll });
 
   return (
     <>
       <PageHeader
         title="Users"
-        description="Create admin and customer accounts."
+        description={
+          isAll
+            ? "Create admin and customer accounts."
+            : `Customer accounts for ${activeOrgName ?? "this organization"}.`
+        }
         actions={<CreateUserDialog />}
       />
 
@@ -34,7 +41,15 @@ export function UsersPage() {
       {error && <ErrorMessage message={`Could not load users: ${error.message}`} />}
 
       {users?.length === 0 && (
-        <EmptyState icon={UserCog} title="No users yet" description="Create the first account." />
+        <EmptyState
+          icon={UserCog}
+          title="No users yet"
+          description={
+            isAll
+              ? "Create the first account."
+              : `${activeOrgName ?? "This organization"} has no users yet. Admins don't belong to an organization, so they won't appear here — switch to "All" to see them.`
+          }
+        />
       )}
 
       {users && users.length > 0 && (
@@ -42,12 +57,12 @@ export function UsersPage() {
           <Table className="min-w-[900px] table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[19%] pl-4">Name</TableHead>
-                <TableHead className="w-[23%]">Email</TableHead>
+                <TableHead className={cn("pl-4", isAll ? "w-[19%]" : "w-[26%]")}>Name</TableHead>
+                <TableHead className={isAll ? "w-[23%]" : "w-[30%]"}>Email</TableHead>
                 <TableHead className="w-[11%]">Role</TableHead>
-                <TableHead className="w-[15%]">Organization</TableHead>
+                {isAll && <TableHead className="w-[15%]">Organization</TableHead>}
                 <TableHead className="w-[12%]">Created</TableHead>
-                <TableHead className="w-[20%] pr-4 text-right">
+                <TableHead className={cn("pr-4 text-right", isAll ? "w-[20%]" : "w-[21%]")}>
                   <span className="sr-only">Actions</span>
                 </TableHead>
               </TableRow>
@@ -69,9 +84,11 @@ export function UsersPage() {
                       {user.role === "admin" ? "Admin" : "Customer"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="truncate">
-                    {user.organization?.name ?? <span className="text-muted-foreground">—</span>}
-                  </TableCell>
+                  {isAll && (
+                    <TableCell className="truncate">
+                      {user.organization?.name ?? <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                  )}
                   <TableCell className="text-muted-foreground">
                     {formatDate(user.created_at)}
                   </TableCell>

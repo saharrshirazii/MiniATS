@@ -8,27 +8,36 @@ import { organizationKeys } from "./useOrganizations";
 
 export const userKeys = {
   all: ["users"] as const,
+  byOrg: (scope: string) => ["users", scope] as const,
 };
 
 export type UserWithOrganization = Tables<"profiles"> & {
   organization: { name: string } | null;
 };
 
-async function fetchUsers(): Promise<UserWithOrganization[]> {
-  const { data, error } = await supabase
+async function fetchUsers(orgId: string | null): Promise<UserWithOrganization[]> {
+  let query = supabase
     .from("profiles")
     .select("*, organization:organizations(name)")
     .order("created_at", { ascending: false });
 
+  if (orgId) query = query.eq("organization_id", orgId);
+
+  const { data, error } = await query;
   if (error) throw error;
   return data;
 }
 
-/** All user profiles. Only admins see every profile (RLS). */
-export function useUsers() {
+/**
+ * User profiles, scoped by the header's organization selector — one
+ * organization's users (admins excluded, since they have no organization),
+ * or everyone when "All" is selected. Only admins see any of this (RLS).
+ */
+export function useUsers(scope: { orgId: string | null; all: boolean }) {
+  const { orgId, all } = scope;
   return useQuery({
-    queryKey: userKeys.all,
-    queryFn: fetchUsers,
+    queryKey: userKeys.byOrg(all ? "all" : (orgId ?? "none")),
+    queryFn: () => fetchUsers(all ? null : orgId),
   });
 }
 
