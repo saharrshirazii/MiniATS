@@ -24,6 +24,7 @@ export type CandidateWithApplications = Pick<
   | "cv_path"
   | "notes"
   | "created_at"
+  | "created_by_email"
 > & { applications: CandidateApplication[]; organizationName: string | null };
 
 export const candidateKeys = {
@@ -35,7 +36,7 @@ async function fetchCandidates(orgId: string | null): Promise<CandidateWithAppli
   let query = supabase
     .from("candidates")
     .select(
-      "id, organization_id, full_name, email, phone, linkedin_url, cv_path, notes, created_at, applications(stage, job:jobs(id, title)), organization:organizations(name)",
+      "id, organization_id, full_name, email, phone, linkedin_url, cv_path, notes, created_at, created_by_email, applications(stage, job:jobs(id, title)), organization:organizations(name)",
     )
     .order("created_at", { ascending: false });
 

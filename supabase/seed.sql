@@ -9,9 +9,9 @@
 -- Fixed UUIDs make this safe to re-run: `on conflict (id) do nothing`
 -- means running it twice never duplicates rows.
 --
--- NOTE: jobs below have no `created_by`, so each job's "Created by"
--- column shows a dash. That's cosmetic only — it doesn't affect RLS, the
--- Kanban board, or any acceptance criteria for this issue.
+-- NOTE: jobs and candidates below have no `created_by`, so each one's
+-- "Created by" column shows a dash. That's cosmetic only — it doesn't
+-- affect RLS, the Kanban board, or any acceptance criteria for this issue.
 --
 -- Run this at any point relative to creating the demo customer logins
 -- (next step) — the two don't depend on each other.

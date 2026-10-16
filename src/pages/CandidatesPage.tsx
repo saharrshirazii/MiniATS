@@ -61,6 +61,18 @@ function Contact({ candidate }: { candidate: CandidateWithApplications }) {
   );
 }
 
+/** "Created by": the creator's email and the date added — same layout as the Jobs page. */
+function CreatedBy({ candidate }: { candidate: CandidateWithApplications }) {
+  return (
+    <>
+      <p className="truncate" title={candidate.created_by_email ?? undefined}>
+        {candidate.created_by_email ?? <span className="text-muted-foreground">—</span>}
+      </p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{formatDate(candidate.created_at)}</p>
+    </>
+  );
+}
+
 /** The jobs a candidate is in the pipeline for, with their stage — or "Talent pool". */
 function Jobs({ candidate }: { candidate: CandidateWithApplications }) {
   const linked = candidate.applications.filter((a) => a.job);
@@ -231,8 +243,8 @@ export function CandidatesPage() {
                       {isAll && <TableHead className="w-[12%]">Organization</TableHead>}
                       <TableHead className="w-[20%]">Contact</TableHead>
                       <TableHead className="w-[8%]">Links</TableHead>
-                      <TableHead className={isAll ? "w-[22%]" : "w-[28%]"}>Jobs</TableHead>
-                      <TableHead className="w-[10%]">Added</TableHead>
+                      <TableHead className={isAll ? "w-[20%]" : "w-[26%]"}>Jobs</TableHead>
+                      <TableHead className="w-[14%]">Created by</TableHead>
                       <TableHead className="w-[12%] pr-4 text-right">
                         <span className="sr-only">Actions</span>
                       </TableHead>
@@ -283,8 +295,8 @@ export function CandidatesPage() {
                         <TableCell>
                           <Jobs candidate={candidate} />
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {formatDate(candidate.created_at)}
+                        <TableCell className="text-sm">
+                          <CreatedBy candidate={candidate} />
                         </TableCell>
                         <TableCell
                           className="pr-4 text-right"
