@@ -18,7 +18,15 @@ const adminNav: NavItem[] = [
   { to: "/admin/users", label: "Users", icon: UserCog },
 ];
 
-function NavSection({ title, items }: { title?: string; items: NavItem[] }) {
+function NavSection({
+  title,
+  items,
+  onNavigate,
+}: {
+  title?: string;
+  items: NavItem[];
+  onNavigate?: () => void;
+}) {
   return (
     <div className="space-y-1">
       {title && (
@@ -31,6 +39,7 @@ function NavSection({ title, items }: { title?: string; items: NavItem[] }) {
           key={to}
           to={to}
           end={to === "/"}
+          onClick={onNavigate}
           className={({ isActive }) =>
             cn(
               "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
@@ -48,18 +57,30 @@ function NavSection({ title, items }: { title?: string; items: NavItem[] }) {
   );
 }
 
-export function Sidebar() {
+/**
+ * The nav links themselves (Dashboard, Jobs, … and, for admins, the Admin
+ * section) — shared by the desktop sidebar and the mobile nav sheet so the
+ * two never drift apart. `onNavigate` closes the mobile sheet after a tap.
+ */
+export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { isAdmin } = useAuth();
 
+  return (
+    <nav className="flex flex-1 flex-col gap-6 p-3">
+      <NavSection items={mainNav} onNavigate={onNavigate} />
+      {isAdmin && <NavSection title="Admin" items={adminNav} onNavigate={onNavigate} />}
+    </nav>
+  );
+}
+
+/** Desktop sidebar (≥ md). Below that, Header renders the same nav in a slide-out sheet. */
+export function Sidebar() {
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r bg-sidebar md:flex">
       <div className="flex h-14 items-center border-b px-5">
         <span className="text-lg font-semibold tracking-tight">MiniATS</span>
       </div>
-      <nav className="flex flex-1 flex-col gap-6 p-3">
-        <NavSection items={mainNav} />
-        {isAdmin && <NavSection title="Admin" items={adminNav} />}
-      </nav>
+      <SidebarNav />
     </aside>
   );
 }
