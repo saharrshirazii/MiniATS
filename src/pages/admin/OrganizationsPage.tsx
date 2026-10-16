@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 import { Building2 } from "lucide-react";
 
 import { CreateOrganizationDialog } from "@/components/admin/CreateOrganizationDialog";
@@ -13,17 +15,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useActiveOrg } from "@/hooks/useActiveOrg";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { formatDate } from "@/lib/format";
 
 export function OrganizationsPage() {
-  const { data: organizations, isPending, error } = useOrganizations();
+  const { activeOrgId, activeOrgName, isAll } = useActiveOrg();
+  const { data: allOrganizations, isPending, error } = useOrganizations();
+
+  // The header's "Organization" selector scopes this list too, same as
+  // Jobs/Candidates/Users — picking one organization shows just that row.
+  const organizations = useMemo(() => {
+    if (!allOrganizations || isAll) return allOrganizations;
+    return allOrganizations.filter((org) => org.id === activeOrgId);
+  }, [allOrganizations, isAll, activeOrgId]);
 
   return (
     <>
       <PageHeader
         title="Organizations"
-        description="Customer companies using MiniATS."
+        description={
+          isAll
+            ? "Customer companies using MiniATS."
+            : `Showing ${activeOrgName ?? "the selected organization"} only.`
+        }
         actions={<CreateOrganizationDialog />}
       />
 
