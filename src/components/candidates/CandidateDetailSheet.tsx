@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ExternalLink, Loader2, Mail, Pencil, Phone } from "lucide-react";
+import { ExternalLink, Loader2, Mail, Pencil, Phone, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -21,9 +21,16 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { useUpdateCandidate, type CandidateWithApplications } from "@/hooks/useCandidates";
+import { useAssessCv } from "@/hooks/useApplications";
+import {
+  useUpdateCandidate,
+  type CandidateApplication,
+  type CandidateWithApplications,
+} from "@/hooks/useCandidates";
+import { scoreBadgeClass } from "@/lib/ai-assessment";
 import { STAGES } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 const schema = z
   .object({
@@ -53,6 +60,100 @@ type FormState = z.input<typeof schema>;
 type ValidCandidate = z.output<typeof schema>;
 
 const stageLabel = (stage: string) => STAGES.find((s) => s.value === stage)?.label ?? stage;
+
+/** Score, summary and strengths/gaps from a past assessment, if there is one. */
+function AiAssessmentResult({ application }: { application: CandidateApplication }) {
+  if (application.ai_score == null) return null;
+
+  return (
+    <div className="space-y-1.5 border-t pt-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge
+          variant="outline"
+          className={cn("gap-1", scoreBadgeClass(application.ai_score))}
+        >
+          <Sparkles className="size-3" />
+          {application.ai_score}/100 fit
+        </Badge>
+        {application.ai_assessed_at && (
+          <span className="text-xs text-muted-foreground">
+            Assessed {formatDate(application.ai_assessed_at)}
+          </span>
+        )}
+      </div>
+      {application.ai_summary && (
+        <p className="text-xs text-muted-foreground">{application.ai_summary}</p>
+      )}
+      {((application.ai_strengths?.length ?? 0) > 0 ||
+        (application.ai_gaps?.length ?? 0) > 0) && (
+        <div className="grid grid-cols-2 gap-3">
+          {(application.ai_strengths?.length ?? 0) > 0 && (
+            <div>
+              <p className="text-xs font-medium text-emerald-700">Strengths</p>
+              <ul className="list-disc space-y-0.5 pl-3.5 text-xs text-muted-foreground">
+                {application.ai_strengths!.map((s) => (
+                  <li key={s}>{s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {(application.ai_gaps?.length ?? 0) > 0 && (
+            <div>
+              <p className="text-xs font-medium text-amber-700">Gaps</p>
+              <ul className="list-disc space-y-0.5 pl-3.5 text-xs text-muted-foreground">
+                {application.ai_gaps!.map((g) => (
+                  <li key={g}>{g}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Triggers the `assess-cv` Edge Function for one application. Each pipeline
+ * row gets its own instance, so a loading or error state on one job never
+ * affects another. Advisory only — it saves a score/summary for a human to
+ * weigh; it never moves the card or changes its stage.
+ */
+function AssessButton({
+  application,
+  organizationId,
+  hasCv,
+}: {
+  application: CandidateApplication;
+  organizationId: string;
+  hasCv: boolean;
+}) {
+  const assessCv = useAssessCv();
+  const hasResult = application.ai_score != null;
+
+  return (
+    <div className="space-y-1">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-7 text-xs"
+        disabled={assessCv.isPending || !hasCv}
+        title={!hasCv ? "Upload a CV for this candidate first" : undefined}
+        onClick={() =>
+          assessCv.mutate(
+            { applicationId: application.id, orgId: organizationId },
+            { onSuccess: () => toast.success("CV assessed") },
+          )
+        }
+      >
+        {assessCv.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}
+        {assessCv.isPending ? "Assessing…" : hasResult ? "Re-assess with AI" : "Assess with AI"}
+      </Button>
+      {assessCv.error && <p className="text-xs text-destructive">{assessCv.error.message}</p>}
+    </div>
+  );
+}
 
 function toFormState(candidate: CandidateWithApplications): FormState {
   return {
@@ -243,18 +344,23 @@ export function CandidateDetailSheet({
                     Talent pool
                   </Badge>
                 ) : (
-                  <ul className="space-y-1.5">
+                  <ul className="space-y-2">
                     {linked.map((a) => (
-                      <li
-                        key={a.job!.id}
-                        className="flex items-center justify-between gap-2 rounded-md border px-3 py-1.5 text-sm"
-                      >
-                        <span className="truncate" title={a.job!.title}>
-                          {a.job!.title}
-                        </span>
-                        <Badge variant="secondary" className="shrink-0">
-                          {stageLabel(a.stage)}
-                        </Badge>
+                      <li key={a.job!.id} className="space-y-2 rounded-md border px-3 py-2 text-sm">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate font-medium" title={a.job!.title}>
+                            {a.job!.title}
+                          </span>
+                          <Badge variant="secondary" className="shrink-0">
+                            {stageLabel(a.stage)}
+                          </Badge>
+                        </div>
+                        <AiAssessmentResult application={a} />
+                        <AssessButton
+                          application={a}
+                          organizationId={candidateForView.organization_id}
+                          hasCv={!!candidateForView.cv_path}
+                        />
                       </li>
                     ))}
                   </ul>

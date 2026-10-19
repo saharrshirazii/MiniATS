@@ -1,11 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { readFunctionError } from "@/hooks/useCandidates";
 import { supabase } from "@/lib/supabase";
 import type { Enums, Tables } from "@/types/database.types";
 
 export type ApplicationStage = Enums<"application_stage">;
 
-export type ApplicationCard = Pick<Tables<"applications">, "id" | "stage" | "position"> & {
+export type ApplicationCard = Pick<
+  Tables<"applications">,
+  "id" | "stage" | "position" | "ai_score"
+> & {
   job: { id: string; title: string };
   candidate: {
     id: string;
@@ -26,7 +30,7 @@ async function fetchApplications(orgId: string): Promise<ApplicationCard[]> {
   const { data, error } = await supabase
     .from("applications")
     .select(
-      "id, stage, position, job:jobs!inner(id, title, organization_id, deleted_at), candidate:candidates(id, full_name, linkedin_url, cv_path)",
+      "id, stage, position, ai_score, job:jobs!inner(id, title, organization_id, deleted_at), candidate:candidates(id, full_name, linkedin_url, cv_path)",
     )
     .eq("job.organization_id", orgId)
     .is("job.deleted_at", null)
@@ -107,6 +111,38 @@ export function useMoveApplication() {
     },
     onSettled: (_data, _err, { orgId }) => {
       queryClient.invalidateQueries({ queryKey: applicationKeys.byOrg(orgId) });
+    },
+  });
+}
+
+export type AiAssessment = {
+  ai_score: number;
+  ai_summary: string;
+  ai_strengths: string[];
+  ai_gaps: string[];
+  ai_assessed_at: string;
+};
+
+/**
+ * Run the AI CV assessment for one application (the `assess-cv` Edge
+ * Function): downloads the candidate's CV, sends it with the job to an LLM,
+ * and saves the result. Advisory only — nothing here moves a card or
+ * changes a stage; it's information for a human to weigh.
+ */
+export function useAssessCv() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ applicationId }: { applicationId: string; orgId: string }) => {
+      const { data, error } = await supabase.functions.invoke<AiAssessment>("assess-cv", {
+        body: { applicationId },
+      });
+      if (error) throw new Error(await readFunctionError(error));
+      return data!;
+    },
+    onSuccess: (_data, { orgId }) => {
+      queryClient.invalidateQueries({ queryKey: applicationKeys.byOrg(orgId) });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] }); // shown in the detail panel too
     },
   });
 }

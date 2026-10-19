@@ -1,9 +1,11 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Linkedin } from "lucide-react";
+import { Linkedin, Sparkles } from "lucide-react";
 
 import { CvLink } from "@/components/candidates/CvLink";
+import { Badge } from "@/components/ui/badge";
 import type { ApplicationCard } from "@/hooks/useApplications";
+import { scoreBadgeClass } from "@/lib/ai-assessment";
 import { cn } from "@/lib/utils";
 
 /**
@@ -39,9 +41,21 @@ export function CandidateCard({
         isDragging && "opacity-40",
       )}
     >
-      <p className="truncate text-sm font-medium" title={application.candidate.full_name}>
-        {application.candidate.full_name}
-      </p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="truncate text-sm font-medium" title={application.candidate.full_name}>
+          {application.candidate.full_name}
+        </p>
+        {application.ai_score != null && (
+          <Badge
+            variant="outline"
+            className={cn("shrink-0 gap-0.5", scoreBadgeClass(application.ai_score))}
+            title="AI fit score — advisory only"
+          >
+            <Sparkles className="size-3" />
+            {application.ai_score}
+          </Badge>
+        )}
+      </div>
       <p className="mt-0.5 truncate text-xs text-muted-foreground" title={application.job.title}>
         {application.job.title}
       </p>

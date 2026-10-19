@@ -426,3 +426,9 @@ verify_jwt = true
 # user may call it; verify_jwt rejects anonymous calls.
 [functions.parse-cv]
 verify_jwt = true
+
+# MiniATS: AI CV assessment. Any signed-in user with access to the
+# application may call it — the function runs every query as the caller
+# (their own JWT, not service_role), so RLS does the organization scoping.
+[functions.assess-cv]
+verify_jwt = true

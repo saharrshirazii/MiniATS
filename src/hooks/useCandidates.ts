@@ -9,8 +9,14 @@ export type ApplicationStage = Enums<"application_stage">;
 
 /** One job this candidate is in the pipeline for. `job` is null if the job is hidden from the caller. */
 export type CandidateApplication = {
+  id: string;
   stage: ApplicationStage;
   job: { id: string; title: string } | null;
+  ai_score: number | null;
+  ai_summary: string | null;
+  ai_strengths: string[] | null;
+  ai_gaps: string[] | null;
+  ai_assessed_at: string | null;
 };
 
 export type CandidateWithApplications = Pick<
@@ -36,7 +42,7 @@ async function fetchCandidates(orgId: string | null): Promise<CandidateWithAppli
   let query = supabase
     .from("candidates")
     .select(
-      "id, organization_id, full_name, email, phone, linkedin_url, cv_path, notes, created_at, created_by_email, applications(stage, job:jobs(id, title)), organization:organizations(name)",
+      "id, organization_id, full_name, email, phone, linkedin_url, cv_path, notes, created_at, created_by_email, applications(id, stage, ai_score, ai_summary, ai_strengths, ai_gaps, ai_assessed_at, job:jobs(id, title)), organization:organizations(name)",
     )
     .order("created_at", { ascending: false });
 
@@ -209,7 +215,7 @@ export function useCvSignedUrl() {
 }
 
 /** Pull the message out of a FunctionsHttpError body, falling back to its own message. */
-async function readFunctionError(error: unknown): Promise<string> {
+export async function readFunctionError(error: unknown): Promise<string> {
   const context = (error as { context?: Response }).context;
   if (context && typeof context.json === "function") {
     try {

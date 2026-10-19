@@ -92,7 +92,9 @@ export type Database = {
       applications: {
         Row: {
           ai_assessed_at: string | null
+          ai_gaps: string[] | null
           ai_score: number | null
+          ai_strengths: string[] | null
           ai_summary: string | null
           candidate_id: string
           created_at: string
@@ -104,7 +106,9 @@ export type Database = {
         }
         Insert: {
           ai_assessed_at?: string | null
+          ai_gaps?: string[] | null
           ai_score?: number | null
+          ai_strengths?: string[] | null
           ai_summary?: string | null
           candidate_id: string
           created_at?: string
@@ -116,7 +120,9 @@ export type Database = {
         }
         Update: {
           ai_assessed_at?: string | null
+          ai_gaps?: string[] | null
           ai_score?: number | null
+          ai_strengths?: string[] | null
           ai_summary?: string | null
           candidate_id?: string
           created_at?: string

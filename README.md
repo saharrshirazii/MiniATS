@@ -27,7 +27,7 @@ Recruiting teams post jobs, add candidates and move them through a hiring pipeli
 - [x] "Talent pool" view: candidates not yet linked to a job, filterable from both the Candidates page and the Dashboard
 - [x] Activity log: every job/candidate change recorded by database triggers (append-only); admins see all organizations, customers see their own, with search, filters and paging
 - [x] Job lifecycle (draft, open, on hold, closed, archived) and soft delete with 90-day restore
-- [ ] AI-based CV assessment (score, strengths, gaps, summary) — see [AI CV assessment](#ai-cv-assessment) below
+- [x] AI-based CV assessment (score, strengths, gaps, summary) — see [AI CV assessment](#ai-cv-assessment) below
 
 ---
 
@@ -56,8 +56,8 @@ Recruiting teams post jobs, add candidates and move them through a hiring pipeli
 │  • Candidates        │ ─────► │  Storage ───── CVs (private bucket)   │
 │  • Kanban            │        │  Edge Functions                       │
 │  • Admin             │        │    • create-user, delete-user         │
-└──────────────────────┘        │    • parse-cv    (admin / CV parsing) │
-                                │    • assess-cv   (planned — see below)│
+└──────────────────────┘        │    • parse-cv    (CV → contact fields)│
+                                │    • assess-cv   (CV → AI fit score)  │
                                 └───────────────────────────────────────┘
 ```
 
@@ -76,7 +76,7 @@ Pipeline stages: `applied → screening → interview → offer → hired / reje
 ### Security
 - **Row Level Security** on every table: customers only see their own organization's data; admins see everything.
 - **No public sign-up.** Accounts are created by admins through the `create-user` Edge Function.
-- The Supabase `service_role` key is only used server-side in Edge Functions, never in the browser.
+- The Supabase `service_role` key is only used server-side, and only by `create-user`/`delete-user` (account management needs it to bypass RLS). `parse-cv` and `assess-cv` instead run as the caller — built from their own JWT — so the same RLS rules that protect a browser query protect these too; a customer can only assess their own organization's candidates.
 
 ---
 
@@ -117,6 +117,12 @@ npm run db:types     # regenerate src/types/database.types.ts
 npx supabase functions deploy create-user
 npx supabase functions deploy delete-user
 npx supabase functions deploy parse-cv
+npx supabase functions deploy assess-cv
+```
+
+`assess-cv` also needs an LLM API key as a secret (never committed, never `VITE_`-prefixed):
+```bash
+npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 | Function | Purpose |
@@ -124,8 +130,7 @@ npx supabase functions deploy parse-cv
 | `create-user` | Admin-only. Verifies the caller is an admin, then creates the account and its profile (role, organization). |
 | `delete-user` | Admin-only. Deletes an account (not your own). The database keeps at least one admin. |
 | `parse-cv` | Any signed-in user. Reads an uploaded CV (PDF) and returns contact details to pre-fill the candidate form. Touches no data. |
-
-`assess-cv` (AI CV assessment) is planned but not yet deployed — see [AI CV assessment](#ai-cv-assessment) below.
+| `assess-cv` | Any signed-in user with access to the application. Reads a candidate's CV, sends it with the job to an LLM, and saves the fit score/summary — see [AI CV assessment](#ai-cv-assessment) below. |
 
 Tests (requires [Deno](https://deno.com)):
 ```bash
@@ -161,7 +166,7 @@ npm run dev
 ```
 ├── supabase/
 │   ├── migrations/      # Database schema and RLS policies
-│   ├── functions/       # Edge Functions (create-user, delete-user, parse-cv)
+│   ├── functions/       # Edge Functions (create-user, delete-user, parse-cv, assess-cv)
 │   └── seed.sql         # Demo data
 └── src/
     ├── components/      # UI, layout and Kanban components
@@ -188,21 +193,36 @@ npm run dev
 - A candidate with **no job attached** is a "talent pool" candidate — useful for people worth keeping on file before there's an open role for them. Both the Candidates page and the Dashboard can filter to just the talent pool.
 - **LinkedIn profiles can't be scraped**, so candidate enrichment (pre-filling the form from a CV) is CV-based, not LinkedIn-based.
 - CVs are stored as PDFs in a **private** Storage bucket and viewed through short-lived signed URLs — never a permanent public link.
-- The **activity log** records creation, edits (full name, email, phone, LinkedIn, notes) and deletion for candidates, and creation, edits, status changes, soft delete/restore and permanent deletion for jobs — the fuller lifecycle jobs have.
-- The admin-only **account creation** and **CV-assessment** server logic run in Supabase Edge Functions using the `service_role` key, which never reaches the browser; every function re-checks the caller's role server-side rather than trusting the client.
+- The **activity log** records creation, edits (full name, email, phone, LinkedIn, notes) and deletion for candidates, and creation, edits, status changes, soft delete/restore and permanent deletion for jobs — the fuller lifecycle jobs have. An AI assessment does **not** add a log entry — it's advisory data on the application, not a pipeline action.
+- The admin-only **account creation** runs in an Edge Function using the `service_role` key, which never reaches the browser. `parse-cv` and `assess-cv` don't need that privilege: they run as the caller's own JWT, so RLS does the scoping for free and there's no custom role check to get wrong.
 
 ---
 
 ## AI CV assessment
 
-Planned, not yet built (explained in the demo video in the meantime). The approach:
+### Approach
 
-1. A new `assess-cv` Edge Function, called from the candidate detail panel ("Assess fit for this job").
-2. It downloads the candidate's CV from the private `cvs` bucket and extracts the text (same PDF-parsing approach as the existing `parse-cv` function).
-3. It sends the CV text plus the target job's title/description to an LLM, asking for strict JSON:
-   `{ score: 0-100, strengths: string[], gaps: string[], summary: string }`.
-4. The result is saved on the `applications` row (`ai_score`, `ai_summary` — already in the schema) and shown on the card/detail panel.
-5. **The AI only assists.** It's a second opinion for a human reviewer to accept, ignore, or disagree with — it never moves a card or rejects a candidate on its own.
+1. The candidate detail panel has an **"Assess with AI"** button on each job in their pipeline (one assessment per *application*, i.e. per candidate–job pair — the same CV can score differently against different jobs).
+2. The `assess-cv` Edge Function downloads the candidate's CV from the private `cvs` bucket and extracts its text (same PDF-parsing approach as `parse-cv`: [`unpdf`](https://github.com/unjs/unpdf), shared via `supabase/functions/_shared/pdf.ts`).
+3. It sends the CV text plus the job's title/description to an LLM ([Claude Haiku](https://docs.claude.com/en/docs/about-claude/models/overview) — fast and inexpensive, which fits a classification/extraction task like this), asking for **strict JSON only**:
+   ```json
+   { "score": 0-100, "strengths": ["..."], "gaps": ["..."], "summary": "..." }
+   ```
+   The response is parsed and validated against that exact shape (zod) before anything is saved — a malformed or off-schema reply fails the request rather than silently saving garbage.
+4. The result is saved on the `applications` row (`ai_score`, `ai_summary`, `ai_strengths`, `ai_gaps`, `ai_assessed_at`) and shown on the Kanban card (a small colored score badge) and in the candidate detail panel (score, summary, strengths, gaps).
+5. The function runs as the **caller's own JWT**, not `service_role` — RLS does the organization scoping, exactly as it would for a query from the browser. No separate role check was needed.
+
+### Prompt design
+
+The prompt is deliberately narrow: compare *this* CV against *this* job and return only the four fields above, nothing else. It explicitly asks for concrete, CV-grounded strengths and gaps ("reference actual details... not generic praise") rather than generic encouragement, and reminds the model that a human makes the final call, which nudges it to actually name gaps instead of smoothing them over. CV text and job description are both truncated to a few thousand characters before the call, which keeps cost and latency predictable and is enough for a CV/job-description-length document.
+
+### Limitations
+
+- **The AI only assists.** A score, summary, strengths and gaps are *information for a human reviewer* — the function never moves a Kanban card, changes a stage, or rejects a candidate on its own. There's also no activity-log entry for an assessment; it isn't a pipeline action.
+- **Bias.** An LLM trained on real-world text can reproduce real-world hiring bias — e.g. favoring certain schools, employers, or phrasing styles over substance. The score is a starting point for a conversation, not a ranking to sort candidates by and trust blindly.
+- **Hallucination.** The model can occasionally invent a plausible-sounding "strength" or "gap" that isn't actually supported by the CV text, especially on a short or unusually formatted CV. The output is validated for *shape* (strict JSON schema), not for *factual accuracy* against the source document — a reviewer should still skim the actual CV.
+- **CV quality in, assessment quality out.** A scanned-image PDF with no extractable text, a CV in a language the parser mishandles, or a very unconventional layout will all produce a weaker assessment (or an outright 422 error if no text could be extracted at all).
+- **GDPR / data handling.** The CV's full text (personal data) is sent to a third-party LLM API for this one request; it is not stored by MiniATS beyond the four summary fields above (no raw CV text is persisted outside the original PDF in Storage), and the provider call carries no identifying fields beyond what's in the CV text itself. For a production deployment this would need a documented sub-processor, a retention/training-opt-out check with the LLM provider, and ideally a candidate-facing notice that an AI assessment can be requested on their application.
 
 ---
 
