@@ -6,7 +6,7 @@ Recruiting teams post jobs, add candidates and move them through a hiring pipeli
 | | |
 |---|---|
 | 🔗 **Live app** | [mini-ats-three.vercel.app](https://mini-ats-three.vercel.app) |
-| 🎥 **Demo video** | _coming soon_ |
+| 🎥 **Demo video** | [Loom walkthrough](https://www.loom.com/share/9ac404fedd0e40e588ebb1c9b217f6ed) |
 | 📋 **Roadmap** | [GitHub milestones](https://github.com/saharrshirazii/MiniATS/milestones) |
 
 ---
