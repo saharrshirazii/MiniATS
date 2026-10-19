@@ -74,6 +74,10 @@ ${truncate(cvText, MAX_CV_CHARS)}`;
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 1024,
+      // This is a short classification/extraction task — no need for the
+      // model's extended-thinking trace, and without this some models emit
+      // a leading `thinking` content block before the actual text block.
+      thinking: { type: "disabled" },
       messages: [{ role: "user", content: prompt }],
     }),
   });
@@ -84,7 +88,19 @@ ${truncate(cvText, MAX_CV_CHARS)}`;
   }
 
   const data = await response.json();
-  const text = data?.content?.[0]?.text;
+  // Find the first text block rather than assuming index 0 — a `thinking`
+  // block, when present, comes first and has no `text` field.
+  const textBlock = Array.isArray(data?.content)
+    ? data.content.find((block: unknown): block is { type: "text"; text: string } => {
+        return (
+          typeof block === "object" &&
+          block !== null &&
+          (block as { type?: unknown }).type === "text" &&
+          typeof (block as { text?: unknown }).text === "string"
+        );
+      })
+    : undefined;
+  const text = textBlock?.text;
   if (typeof text !== "string") {
     // Surface the actual response so a shape mismatch is diagnosable from
     // the UI error, instead of a dead end — this is not sent to the model,
