@@ -86,7 +86,12 @@ ${truncate(cvText, MAX_CV_CHARS)}`;
   const data = await response.json();
   const text = data?.content?.[0]?.text;
   if (typeof text !== "string") {
-    throw new Error("AI service returned an unexpected response shape.");
+    // Surface the actual response so a shape mismatch is diagnosable from
+    // the UI error, instead of a dead end — this is not sent to the model,
+    // only shown back to the caller who already has access to this CV/job.
+    throw new Error(
+      `AI service returned an unexpected response shape: ${JSON.stringify(data).slice(0, 500)}`,
+    );
   }
 
   let parsed: unknown;
