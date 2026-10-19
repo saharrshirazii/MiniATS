@@ -28,6 +28,7 @@ Recruiting teams post jobs, add candidates and move them through a hiring pipeli
 - [x] Activity log: every job/candidate change recorded by database triggers (append-only); admins see all organizations, customers see their own, with search, filters and paging
 - [x] Job lifecycle (draft, open, on hold, closed, archived) and soft delete with 90-day restore
 - [x] AI-based CV assessment (score, strengths, gaps, summary) — see [AI CV assessment](#ai-cv-assessment) below
+- [x] Responsive layout: a slide-out mobile navigation menu below the `md` breakpoint, scrollable tables/Kanban columns on narrow screens, and dialogs capped to the viewport height so forms don't clip on mobile
 
 ---
 
@@ -214,7 +215,7 @@ npm run dev
 
 ### Prompt design
 
-The prompt is deliberately narrow: compare *this* CV against *this* job and return only the four fields above, nothing else. It explicitly asks for concrete, CV-grounded strengths and gaps ("reference actual details... not generic praise") rather than generic encouragement, and reminds the model that a human makes the final call, which nudges it to actually name gaps instead of smoothing them over. CV text and job description are both truncated to a few thousand characters before the call, which keeps cost and latency predictable and is enough for a CV/job-description-length document.
+The prompt is deliberately narrow: compare *this* CV against *this* job and return only the four fields above, nothing else. It explicitly asks for concrete, CV-grounded strengths and gaps ("reference actual details... not generic praise") rather than generic encouragement, and reminds the model that a human makes the final call, which nudges it to actually name gaps instead of smoothing them over. CV text and job description are both truncated to a few thousand characters before the call, which keeps cost and latency predictable and is enough for a CV/job-description-length document. Extended thinking is explicitly disabled on the request (`thinking: { type: "disabled" }`) — this is a short classification task with no need for a visible reasoning trace, and it keeps the response to a single, predictable JSON text block.
 
 ### Limitations
 

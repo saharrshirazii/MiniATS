@@ -128,17 +128,18 @@ applications  (id, job_id, candidate_id, stage, position, ai_score, ai_summary, 
 Issues and milestones live on GitHub: https://github.com/saharrshirazii/MiniATS/milestones
 Before starting a task, read the issue (`gh issue view <n>`) and follow its checklist and acceptance criteria.
 
-| Milestone | Due | Issues |
-|---|---|---|
-| M0 · Setup | Mon 12 | #1–#6 |
-| M1 · Auth & Accounts | Tue 13 | #7–#11 |
-| M2 · Jobs | Tue 13 | #12–#14 |
-| M3 · Candidates | Wed 14 | #15–#17 |
-| M4 · Kanban | Wed 14 | #18–#20 |
-| M5 · First Delivery | Wed 14 | #21–#23 |
-| M6 · AI CV Assessment | Thu 15 | #24–#26 |
-| M7 · Nice-to-haves | Thu 15 | #27–#29 |
-| M8 · Final Delivery | Fri 16 | #30–#32 |
+| Milestone | Due | Issues | Status |
+|---|---|---|---|
+| M0 · Setup | Mon 12 | #1–#6 | Done |
+| M1 · Auth & Accounts | Tue 13 | #7–#11 | Done |
+| M2 · Jobs | Tue 13 | #12–#14 | Done |
+| M3 · Candidates | Wed 14 | #15–#17 | Done |
+| M4 · Kanban | Wed 14 | #18–#20 | Done |
+| M5 · First Delivery | Wed 14 | #21–#23 | Done |
+| M6 · AI CV Assessment | Thu 15 | #24–#26 | Done |
+| M8 · Final Delivery | Fri 16 | #30–#32 | Done |
+
+M7 · Nice-to-haves (#27–#29) was dropped to focus on delivery.
 
 **Priority:** required features first. If time runs short: drop organizations → single-user customers; drop drag and drop → stage dropdown; drop AI implementation → explain approach in demo. Never cut RLS, the admin-only edge function, or the live deployment.
 
