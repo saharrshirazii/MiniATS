@@ -8,11 +8,18 @@ const ADMIN_ID = "11111111-1111-4111-8111-111111111111";
 const ADMIN2_ID = "44444444-4444-4444-8444-444444444444";
 const CUSTOMER_ID = "22222222-2222-4222-8222-222222222222";
 
-type Row = { id: string; role: string; email: string };
+type Row = {
+  id: string;
+  role: string;
+  email: string;
+  full_name?: string | null;
+  organization_id?: string | null;
+};
 
 /** Minimal stand-in for the service-role client. */
 function fakeClient(profiles: Row[]) {
   const deleted: string[] = [];
+  const rpcCalls: { name: string; params: Record<string, unknown> }[] = [];
   const tokens: Record<string, string> = { "admin-token": ADMIN_ID, "customer-token": CUSTOMER_ID };
 
   const client = {
@@ -30,6 +37,10 @@ function fakeClient(profiles: Row[]) {
         },
       },
     },
+    rpc: (name: string, params: Record<string, unknown>) => {
+      rpcCalls.push({ name, params });
+      return Promise.resolve({ error: null });
+    },
     from: () => ({
       select: () => ({
         eq: (column: keyof Row, value: string) => {
@@ -43,12 +54,14 @@ function fakeClient(profiles: Row[]) {
     }),
   };
 
-  return { client: client as unknown as SupabaseClient, deleted };
+  return { client: client as unknown as SupabaseClient, deleted, rpcCalls };
 }
 
+const ORG_ID = "33333333-3333-4333-8333-333333333333";
+
 const people: Row[] = [
-  { id: ADMIN_ID, role: "admin", email: "admin@x.se" },
-  { id: CUSTOMER_ID, role: "customer", email: "anna@acme.se" },
+  { id: ADMIN_ID, role: "admin", email: "admin@x.se", full_name: "Admin Person" },
+  { id: CUSTOMER_ID, role: "customer", email: "anna@acme.se", full_name: "Anna Andersson", organization_id: ORG_ID },
 ];
 
 function request(body: unknown, token?: string) {
@@ -101,6 +114,24 @@ Deno.test("deletes a customer (200)", async () => {
   assertEquals(res.status, 200);
   assertEquals(deleted, [CUSTOMER_ID]);
   assertEquals((await res.json()).deleted.email, "anna@acme.se");
+});
+
+Deno.test("logs the deletion with the calling admin as actor (not the deleted user)", async () => {
+  const { client, rpcCalls } = fakeClient(people);
+  const res = await createHandler(() => client)(request({ user_id: CUSTOMER_ID }, "admin-token"));
+  assertEquals(res.status, 200);
+  assertEquals(rpcCalls, [
+    {
+      name: "log_user_activity",
+      params: {
+        p_id: CUSTOMER_ID,
+        p_organization_id: ORG_ID,
+        p_label: "Anna Andersson",
+        p_action: "deleted_permanently",
+        p_actor_id: ADMIN_ID,
+      },
+    },
+  ]);
 });
 
 Deno.test("deletes another admin when more than one exists (200)", async () => {

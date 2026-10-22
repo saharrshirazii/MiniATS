@@ -20,6 +20,7 @@ type FakeOptions = { existingEmails?: string[]; failProfileUpsert?: boolean };
 function fakeClient({ existingEmails = [], failProfileUpsert = false }: FakeOptions = {}) {
   const created: Record<string, unknown>[] = [];
   const deletedUserIds: string[] = [];
+  const rpcCalls: { name: string; params: Record<string, unknown> }[] = [];
   const tokens: Record<string, string> = { "admin-token": ADMIN_ID, "customer-token": CUSTOMER_ID };
   const tables: Record<string, Record<string, unknown>[]> = {
     profiles: [
@@ -53,6 +54,10 @@ function fakeClient({ existingEmails = [], failProfileUpsert = false }: FakeOpti
         },
       },
     },
+    rpc: (name: string, params: Record<string, unknown>) => {
+      rpcCalls.push({ name, params });
+      return Promise.resolve({ error: null });
+    },
     from: (table: string) => ({
       upsert: (row: Record<string, unknown>) => {
         if (failProfileUpsert) return Promise.resolve({ error: { message: "db down" } });
@@ -76,7 +81,7 @@ function fakeClient({ existingEmails = [], failProfileUpsert = false }: FakeOpti
 
   const profileOf = (id: string) => tables.profiles.find((p) => p.id === id);
 
-  return { client: client as unknown as SupabaseClient, created, deletedUserIds, profileOf };
+  return { client: client as unknown as SupabaseClient, created, deletedUserIds, rpcCalls, profileOf };
 }
 
 function request(body: unknown, token?: string, method = "POST") {
@@ -192,6 +197,24 @@ Deno.test("new admin's profile is admin, not the default customer", async () => 
     request({ email: "boss@x.se", password: "secret-password", role: "admin" }, "admin-token"),
   );
   assertEquals(profileOf("new-user-id")!.role, "admin");
+});
+
+Deno.test("logs the creation with the calling admin as actor (not the new user)", async () => {
+  const { client, rpcCalls } = fakeClient();
+  const res = await createHandler(() => client)(request(validCustomer, "admin-token"));
+  assertEquals(res.status, 201);
+  assertEquals(rpcCalls, [
+    {
+      name: "log_user_activity",
+      params: {
+        p_id: "new-user-id",
+        p_organization_id: ORG_ID,
+        p_label: "Anna Andersson",
+        p_action: "created",
+        p_actor_id: ADMIN_ID,
+      },
+    },
+  ]);
 });
 
 Deno.test("if saving the profile fails, the new login is deleted (500)", async () => {

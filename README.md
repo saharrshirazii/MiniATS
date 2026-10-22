@@ -25,7 +25,7 @@ Recruiting teams post jobs, add candidates and move them through a hiring pipeli
 ### Extra
 - [x] CV upload to private Storage, signed-URL viewing, and a candidate detail panel (contact info, CV, LinkedIn, every job they're linked to, notes — editable in place)
 - [x] "Talent pool" view: candidates not yet linked to a job, filterable from both the Candidates page and the Dashboard
-- [x] Activity log: every job/candidate change recorded by database triggers (append-only); admins see all organizations, customers see their own, with search, filters and paging
+- [x] Activity log: every job, candidate, organization and user change recorded (append-only); admins see all organizations, customers see their own, with search, filters and paging
 - [x] Job lifecycle (draft, open, on hold, closed, archived) and soft delete with 90-day restore
 - [x] AI-based CV assessment (score, strengths, gaps, summary) — see [AI CV assessment](#ai-cv-assessment) below
 - [x] Responsive layout: a slide-out mobile navigation menu below the `md` breakpoint, scrollable tables/Kanban columns on narrow screens, and dialogs capped to the viewport height so forms don't clip on mobile
@@ -194,7 +194,7 @@ npm run dev
 - A candidate with **no job attached** is a "talent pool" candidate — useful for people worth keeping on file before there's an open role for them. Both the Candidates page and the Dashboard can filter to just the talent pool.
 - **LinkedIn profiles can't be scraped**, so candidate enrichment (pre-filling the form from a CV) is CV-based, not LinkedIn-based.
 - CVs are stored as PDFs in a **private** Storage bucket and viewed through short-lived signed URLs — never a permanent public link.
-- The **activity log** records creation, edits (full name, email, phone, LinkedIn, notes) and deletion for candidates, and creation, edits, status changes, soft delete/restore and permanent deletion for jobs — the fuller lifecycle jobs have. An AI assessment does **not** add a log entry — it's advisory data on the application, not a pipeline action.
+- The **activity log** records creation, edits (full name, email, phone, LinkedIn, notes) and deletion for candidates, and creation, edits, status changes, soft delete/restore and permanent deletion for jobs — the fuller lifecycle jobs have. Organizations and users (role/organization/name edits) are logged too; account creation and deletion go through the admin-only Edge Functions, which attribute the entry to the verified admin explicitly (those run under the `service_role` key, where there's no signed-in session for the database to read the actor from automatically). An AI assessment does **not** add a log entry — it's advisory data on the application, not a pipeline action.
 - The admin-only **account creation** runs in an Edge Function using the `service_role` key, which never reaches the browser. `parse-cv` and `assess-cv` don't need that privilege: they run as the caller's own JWT, so RLS does the scoping for free and there's no custom role check to get wrong.
 
 ---

@@ -50,7 +50,7 @@ export function createHandler(getAdminClient: () => SupabaseClient) {
 
     const { data: target, error: targetError } = await admin
       .from("profiles")
-      .select("id, email")
+      .select("id, email, full_name, organization_id")
       .eq("id", targetId)
       .maybeSingle();
 
@@ -65,6 +65,19 @@ export function createHandler(getAdminClient: () => SupabaseClient) {
     if (deleteError) {
       return errorResponse(500, `Could not delete user: ${deleteError.message}`);
     }
+
+    // Record this in the activity log, using the snapshot captured above
+    // (the row is gone now via ON DELETE CASCADE). Same reasoning as
+    // create-user: service-role key means no auth.uid(), so the verified
+    // admin's id is passed in explicitly; best-effort, since the account
+    // is already deleted either way.
+    await admin.rpc("log_user_activity", {
+      p_id: targetId,
+      p_organization_id: target.organization_id,
+      p_label: target.full_name || target.email,
+      p_action: "deleted_permanently",
+      p_actor_id: check.userId,
+    });
 
     return json({ deleted: { id: targetId, email: target.email } });
   };

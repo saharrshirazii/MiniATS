@@ -294,7 +294,7 @@ function ActivityLogView({
         <EmptyState
           icon={History}
           title="No activity yet"
-          description="Changes to jobs appear here as soon as they happen."
+          description="Changes to jobs, candidates, organizations and users appear here as soon as they happen."
         />
       )}
 

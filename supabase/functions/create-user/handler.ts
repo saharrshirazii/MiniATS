@@ -110,6 +110,18 @@ export function createHandler(getAdminClient: () => SupabaseClient) {
       return errorResponse(500, "Could not save the user's profile. Please try again.");
     }
 
+    // Record this in the activity log. This runs under the service-role
+    // key (no JWT), so auth.uid() would be null — pass the verified admin's
+    // id explicitly instead. Best-effort: the account is already created
+    // and correct, so a logging hiccup here isn't worth failing the request.
+    await admin.rpc("log_user_activity", {
+      p_id: created.user.id,
+      p_organization_id: organizationId,
+      p_label: full_name || email,
+      p_action: "created",
+      p_actor_id: check.userId,
+    });
+
     return json(
       {
         user: {

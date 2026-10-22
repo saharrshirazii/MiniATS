@@ -353,7 +353,7 @@ export type Database = {
         | "deleted"
         | "restored"
         | "deleted_permanently"
-      log_entity_type: "job" | "candidate"
+      log_entity_type: "job" | "candidate" | "organization" | "user"
       user_role: "admin" | "customer"
       workplace_type: "on_site" | "hybrid" | "remote"
     }
@@ -503,7 +503,7 @@ export const Constants = {
         "restored",
         "deleted_permanently",
       ],
-      log_entity_type: ["job", "candidate"],
+      log_entity_type: ["job", "candidate", "organization", "user"],
       user_role: ["admin", "customer"],
       workplace_type: ["on_site", "hybrid", "remote"],
     },
