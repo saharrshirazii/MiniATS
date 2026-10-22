@@ -18,7 +18,11 @@ export type OrganizationWithCounts = {
 async function fetchOrganizations(): Promise<OrganizationWithCounts[]> {
   const { data, error } = await supabase
     .from("organizations")
+    // jobs(count) is filtered to deleted_at is null — a soft-deleted job
+    // doesn't block deleting its organization (matches the database
+    // guard in prevent_delete_nonempty_organization()).
     .select("id, name, created_at, profiles(count), jobs(count), candidates(count)")
+    .is("jobs.deleted_at", null)
     .order("name");
 
   if (error) throw error;
