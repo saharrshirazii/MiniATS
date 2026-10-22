@@ -103,7 +103,12 @@ export function CreateUserDialog() {
           </DialogDescription>
         </DialogHeader>
 
-        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+        <form
+          className="space-y-4"
+          onSubmit={form.handleSubmit(onSubmit)}
+          noValidate
+          autoComplete="off"
+        >
           {createUser.error && <ErrorMessage message={createUser.error.message} />}
 
           <FormField id="user-role" label="Role">
@@ -136,7 +141,12 @@ export function CreateUserDialog() {
           )}
 
           <FormField id="user-name" label="Full name" error={errors.full_name?.message}>
-            <Input id="user-name" placeholder="Anna Andersson" {...form.register("full_name")} />
+            <Input
+              id="user-name"
+              placeholder="Anna Andersson"
+              autoComplete="off"
+              {...form.register("full_name")}
+            />
           </FormField>
 
           <FormField id="user-email" label="Email" error={errors.email?.message}>
@@ -144,6 +154,10 @@ export function CreateUserDialog() {
               id="user-email"
               type="email"
               placeholder="anna@acme.se"
+              // "off" keeps Chrome from offering to autofill the signed-in
+              // admin's own saved login into this (unrelated) new-account
+              // email field.
+              autoComplete="off"
               aria-invalid={!!errors.email}
               {...form.register("email")}
             />
@@ -158,7 +172,11 @@ export function CreateUserDialog() {
             <div className="flex gap-2">
               <PasswordInput
                 id="user-password"
-                autoComplete="off"
+                // "new-password" tells the browser this sets a brand-new
+                // password rather than entering an existing login — unlike
+                // "off", browsers generally respect this and won't offer to
+                // autofill the admin's own saved credentials here.
+                autoComplete="new-password"
                 spellCheck={false}
                 className="font-mono"
                 aria-invalid={!!errors.password}
