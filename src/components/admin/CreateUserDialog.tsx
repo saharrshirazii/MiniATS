@@ -19,6 +19,7 @@ import {
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
+import { PasswordInput } from "@/components/ui/password-input";
 import { generatePassword } from "@/lib/format";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useCreateUser } from "@/hooks/useUsers";
@@ -155,9 +156,8 @@ export function CreateUserDialog() {
             hint="At least 8 characters."
           >
             <div className="flex gap-2">
-              <Input
+              <PasswordInput
                 id="user-password"
-                type="text"
                 autoComplete="off"
                 spellCheck={false}
                 className="font-mono"
